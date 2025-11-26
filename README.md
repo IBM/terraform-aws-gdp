@@ -1,77 +1,226 @@
-<!-- This should be the location of the title of the repository, normally the short name -->
-# repo-template
+# Automated installation of GDP appliances on AWS
 
-<!-- Build Status, is a great thing to have at the top of your repository, it shows that you take your CI/CD as first class citizens -->
-<!-- [![Build Status](https://travis-ci.org/jjasghar/ibm-cloud-cli.svg?branch=master)](https://travis-ci.org/jjasghar/ibm-cloud-cli) -->
-
-<!-- Not always needed, but a scope helps the user understand in a short sentance like below, why this repo exists -->
 ## Scope
 
-The purpose of this project is to provide a template for new open source repositories.
+The modules contained here automate installation of GDP appliances onto AWS.
 
-<!-- A more detailed Usage or detailed explaination of the repository here -->
+The following are supported:
+
+* Central Manager
+* Aggregator
+* Collector
+
+For background and detailed technical information, see the [project info document](docs/project_info.md).
+
+## Summary of process
+
+```
+┌────────────────────────────────────────────────────┐
+│                                                    │
+│      Plan the installation, gather parameter       │
+│                                                    │
+└────────────────────────────────────────────────────┘
+                          │
+                          │
+                          ▼
+┌────────────────────────────────────────────────────┐
+│                                                    │
+│             Create the Central Manager             │
+│                                                    │
+└────────────────────────────────────────────────────┘
+                          │
+                          │
+                          ▼
+┌────────────────────────────────────────────────────┐
+│                                                    │
+│        Manually enter license and configure        │
+│                                                    │
+└────────────────────────────────────────────────────┘
+                          │
+                          │
+                          ▼
+┌────────────────────────────────────────────────────┐
+│                                                    │
+│               Create the Aggregators               │
+│                                                    │
+└────────────────────────────────────────────────────┘
+                          │
+                          │
+                          ▼
+┌────────────────────────────────────────────────────┐
+│                                                    │
+│               Create the Collectors                │
+│                                                    │
+└────────────────────────────────────────────────────┘
+```
+
+## Process flow
+
+1. Connect to AWS. Plan the installation.
+    * Region
+    * VPC
+    * Subnet
+    * Security Group
+    * Machine Types
+    * AMI Files
+
+2. Run the Terraform process to create a Central Manager.
+3. Connect to the Central Manager by web browser and SSH (to CLI) to enter GDP license and convert to Central Manager.
+4. Edit the parameters for the Aggregators to connect to the Central Manager.
+5. Run the Terraform process to create the Aggregators.
+6. Edit the parameters for the Collectors to connect to the Aggregators.
+7. Run the Terraform process to create the Collectors.
+
+## Prerequisites
+
+### AWS
+
+* Ability to login to AWS and view the EC2 instances and other information.
+* RSA PEM key to connect to AWS from the machine that will be running the Terraform process.
+
+### Linux
+
+* A clone of the GitHub repository for the Terraform scripts.
+* Expect
+* Microsoft Powershell
+* yum-utils
+* PEM key from AWS installed in your ssh agent
+
+The documentation here assumes you will be using a Linux computer to run the Terrafrom process. Instructions to install these items will vary depending upon which Linux distribution you are using.
+
+### GDP
+
+* License (only required if you are creating a central manager)
+
 ## Usage
 
-This repository contains some example best practices for open source repositories:
+### Central Manager
 
-* [LICENSE](LICENSE)
-* [README.md](README.md)
-* [CONTRIBUTING.md](CONTRIBUTING.md)
-* [MAINTAINERS.md](MAINTAINERS.md)
-<!-- A Changelog allows you to track major changes and things that happen, https://github.com/github-changelog-generator/github-changelog-generator can help automate the process -->
-* [CHANGELOG.md](CHANGELOG.md)
+Create a GDP Central Manager on AWS:
 
-> These are optional
+```hcl
+module "central_manager" {
 
-<!-- The following are OPTIONAL, but strongly suggested to have in your repository. -->
-* [dco.yml](.github/dco.yml) - This enables DCO bot for you, please take a look https://github.com/probot/dco for more details.
-* [travis.yml](.travis.yml) - This is a example `.travis.yml`, please take a look https://docs.travis-ci.com/user/tutorial/ for more details.
+  # AWS Configuration
+  region                        = "us-east-1"
+  vpc_id                        = "vpc-1c99234371f8230f3"
+  subnet_id                     = "subnet-1d93177291f513083"
+  central_manager_ami_id        = "ami-0955ca4c9f731cc20"
+  central_manager_instance_type = "m6i.2xlarge"
+  key_name                      = "my_rsa_key"
+  pem_file_path                 = "/home/my-user/.ssh/my_rsa_key.pem"
+  allowed_cidrs                 = [
+                                    "10.0.0.0/16",
+                                    "170.225.223.17/32"
+                                  ]
+  assign_public_ip              = false
 
-These may be copied into a new or existing project to make it easier for developers not on a project team to collaborate.
+  # Guardium Configuration
+  domain    = "corp.mycompany.local"
+  timezone  = "America/New_York"
+  resolver1 = "8.8.4.4"
+  resolver2 = "1.1.1.1"
+  tags      = {
+                Environment = "dev"
+                Project     = "GuardiumGDP"
+                Owner       = "customer@example.com"
+                Role        = "CentralManager"
+              }
+}
+```
 
-<!-- A notes section is useful for anything that isn't covered in the Usage or Scope. Like what we have below. -->
-## Notes
 
-**NOTE: While this boilerplate project uses the Apache 2.0 license, when
-establishing a new repo using this template, please use the
-license that was approved for your project.**
+### Aggregator
 
-**NOTE: This repository has been configured with the [DCO bot](https://github.com/probot/dco).
-When you set up a new repository that uses the Apache license, you should
-use the DCO to manage contributions. The DCO bot will help enforce that.
-Please contact one of the IBM GH Org stewards.**
+Create a GDP Aggregator on AWS:
 
-<!-- Questions can be useful but optional, this gives you a place to say, "This is how to contact this project maintainers or create PRs -->
-If you have any questions or issues you can create a new [issue here][issues].
+```hcl
+module "aggregator" {
 
-Pull requests are very welcome! Make sure your patches are well tested.
-Ideally create a topic branch for every separate change you make. For
-example:
+  # AWS Configuration
+  region                   = "us-east-1"
+  vpc_id                   = "vpc-1c99234371f8230f3"
+  subnet_id                = "subnet-1d93177291f513083"
+  aggregator_ami_id        = "ami-0955ca4c9f731cc20"
+  aggregator_instance_type = "m6i.2xlarge"
+  key_name                 = "my_rsa_key"
+  pem_file_path            = "/home/my-user/.ssh/my_rsa_key.pem"
+  allowed_cidrs            = [
+                               "10.0.0.0/16",
+                               "170.225.223.17/32"
+                             ]
+  assign_public_ip         = false
 
-1. Fork the repo
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Added some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+  # Guardium Configuration
+  domain    = "corp.mycompany.local"
+  timezone  = "America/New_York"
+  resolver1 = "8.8.4.4"
+  resolver2 = "1.1.1.1"
+  tags      = {
+                Environment = "dev"
+                Project     = "GuardiumGDP"
+                Owner       = "customer@example.com"
+                Role        = "Aggregator"
+              }
+}
+```
+
+
+### Collector
+
+Create a GDP Collector on AWS:
+
+```hcl
+module "collector" {
+
+  # AWS Configuration
+  region                  = "us-east-1"
+  vpc_id                  = "vpc-1c99234371f8230f3"
+  subnet_id               = "subnet-1d93177291f513083"
+  collector_ami_id        = "ami-0955ca4c9f731cc20"
+  collector_instance_type = "m6i.2xlarge"
+  key_name                = "my_rsa_key"
+  pem_file_path           = "/home/my-user/.ssh/my_rsa_key.pem"
+  allowed_cidrs           = [
+                              "10.0.0.0/16",
+                              "170.225.223.17/32"
+                            ]
+  assign_public_ip        = false
+
+  # Guardium Configuration
+  domain    = "corp.mycompany.local"
+  timezone  = "America/New_York"
+  resolver1 = "8.8.4.4"
+  resolver2 = "1.1.1.1"
+  tags      = {
+                Environment = "dev"
+                Project     = "GuardiumGDP"
+                Owner       = "customer@example.com"
+                Role        = "Collector"
+              }
+}
+```
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## Support
+
+For issues and questions:
+- Create an issue in this repository
+- Contact the maintainers listed in [MAINTAINERS.md](MAINTAINERS.md)
 
 ## License
 
-All source files must include a Copyright and License header. The SPDX license header is 
-preferred because it can be easily scanned.
-
-If you would like to see the detailed LICENSE click [here](LICENSE).
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
 
 ```text
 #
-# Copyright IBM Corp. {Year project was created} - {Current Year}
+# Copyright IBM Corp. 2025
 # SPDX-License-Identifier: Apache-2.0
 #
 ```
+
 ## Authors
 
-Optionally, you may include a list of authors, though this is redundant with the built-in
-GitHub list of contributors.
-
-- Author: New OpenSource IBMer <new-opensource-ibmer@ibm.com>
-
-[issues]: https://github.com/IBM/repo-template/issues/new
+Module is maintained by IBM with help from [these awesome contributors](https://github.com/IBM/terraform-guardium-datastore-va/graphs/contributors).
