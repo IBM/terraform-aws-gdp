@@ -1,0 +1,96 @@
+#####################################
+# IBM Guardium GDP – Collector Vars
+#####################################
+
+# Copy this file to terraform.tfvars and edit the values in it
+# before running "terraform plan" and "terraform apply".
+
+# =====================================================
+# AWS Region & Network
+# =====================================================
+
+# AWS region where GDP is to be created.
+region = "us-east-1"
+
+# ID of the VPC that GDP will be created in.
+vpc_id = "vpc-0b88123d60e712fe2"
+
+# Subnet that GDP will be created in.
+subnet_id = "subnet-08e64682d699e4e57"
+
+# =====================================================
+# Guardium Collector Deployment
+# =====================================================
+
+# AMI image to be used for the GDP machine.
+collector_ami_id = "ami-0d455679674d9e62f"
+
+# AWS instance type to be used for the GDP machine.
+collector_instance_type = "m6i.2xlarge"
+
+# How many collectors to create.
+collector_count = 1
+
+# =====================================================
+# SSH Access
+# =====================================================
+
+# Name of the key pair used to access GDP on AWS
+key_name      = "guardiumcli"
+
+# Path on the computer running this process to the PEM file
+pem_file_path = "/home/ec2-user/.ssh/guardiumcli.pem"
+
+# =====================================================
+# Security Group CIDRs
+# =====================================================
+
+# IP addresses that can access the GDP machine.
+allowed_cidrs = [
+  "10.0.0.0/16",
+  "170.225.223.17/32"
+]
+
+# Optional custom admin IPs
+custom_allowed_cidrs = [
+  # "192.168.10.0/24",
+  # "203.0.113.45/32"
+]
+
+# =====================================================
+# Public vs Private IP
+# =====================================================
+
+# Should the GDP machine have a public IP address or be
+# accessible only through bastion.
+assign_public_ip = false
+
+# =====================================================
+# GDP Configuration
+# =====================================================
+
+# Domain name
+domain = "corp.mycompany.local"
+
+# Timezone
+timezone = "America/New_York"
+
+# DNS servers
+resolver1 = "8.8.4.4"
+resolver2 = "1.1.1.1"
+
+# GDP tags
+tags = {
+  Environment = "dev"
+  Project     = "GuardiumGDP"
+  Owner       = "customer@example.com"
+  Role        = "Collector"
+}
+
+# =====================================================
+# Existing Security Groups (optional)
+# =====================================================
+# Leave empty to auto-create a new SG or detect existing "guardium-agg-sg"
+existing_guardium_cm_sg_id         = ""
+existing_guardium_aggregator_sg_id = ""
+existing_guardium_collector_sg_id  = ""
