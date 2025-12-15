@@ -83,6 +83,6 @@ https://ip-address:8443
 
 You can then begin using GDP. In the login screen:
 * User: `admin`
-* Password: `the instance ID from AWS`
+* Password: `same password you set for the Central Manager`
 
 You will be prompted to immediately change the password.

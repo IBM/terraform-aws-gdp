@@ -77,6 +77,7 @@ For background and detailed technical information, see the [project info documen
 
 * Ability to login to AWS and view the EC2 instances and other information.
 * RSA PEM key to connect to AWS from the machine that will be running the Terraform process.
+* Ability to SSH into a bastion host if you are creating appliances with private IP addresses.
 
 ### Linux
 
