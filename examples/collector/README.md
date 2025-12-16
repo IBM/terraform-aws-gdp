@@ -31,9 +31,9 @@ The parameters are documented in the file. For additional information about the 
 
 After you have verified the parameters, save the file and exit the editor.
 
-### 1.2 Prepare the connection to Aggregator
+### 1.2 Prepare the connection to Central Manager
 
-In AWS, locate the IP address of the Aggregator you want this Collector to be registered to.
+In AWS, locate the IP address of the Central Manager you want this Collector to be registered to.
 
 Locate this file and edit it:
 
@@ -43,9 +43,9 @@ vi modules/collector/configure_guardium.expect
 
 Scroll down towards the bottom of the file and locate this line.
 
-`send "store system aggregator ip-address\r"`
+`send "register management ip-address 8443\r"`
 
-Replace ip-address with the IP address of the aggregator. Then save the file.
+Replace ip-address with the IP address of the central manager. Then save the file.
 
 ## 2. Run the Terraform process
 
@@ -83,6 +83,6 @@ https://ip-address:8443
 
 You can then begin using GDP. In the login screen:
 * User: `admin`
-* Password: `the instance ID from AWS`
+* Password: `same password you set for the Central Manager`
 
 You will be prompted to immediately change the password.

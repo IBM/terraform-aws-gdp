@@ -164,8 +164,8 @@ expect ">"
 send "store system shared secret guard\r"
 expect ">"
 
-###send "store system aggregator ip-address\r" #e.g. send "register management 10.0.100.2 8443\r"
-send "store system aggregator ip-address\r"
+###send "register management ip-address 8443\r" #e.g. send "register management 10.0.100.2 8443\r"
+send "register management ip-address 8443\r"
 expect ">"
 
 catch {
