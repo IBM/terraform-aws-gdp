@@ -23,6 +23,8 @@ All parameters should be edited in the file terraform.tfvars under these directo
 | key_name | Name of the PEM key, without the path or .pem extension | 
 | pem_file_path | Full path to the PEM file, including the .pem extension | 
 | allowed_cidrs | IP addresses that will be allowed to connect to the appliance | 
+| assign_public_ip | hould the GDP machine have a public IP address or be accessible only through bastion.
+| 
 
 ### GDP-related
 
@@ -31,6 +33,8 @@ All parameters should be edited in the file terraform.tfvars under these directo
 | Name | Comment | 
 | --- | --- | 
 | domain | Local domain, e.g. mydept.myco.local | 
+| central_manager_ip | IP address of the Central Manager to register with | 
+| shared_secret | Shared Secret (for Central Manager registration) | 
 | timezone | Timezone of the appliance, e.g. Asia/Singapore | 
 | resolver1 | DNS server for the appliance, default value of 8.8.4.4 provided | 
 | resolver2 | DNS server for the appliance, default value of 1.1.1.1 provided | 

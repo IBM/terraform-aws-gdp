@@ -49,10 +49,13 @@ data "aws_security_groups" "guardium_agg_existing" {
 }
 
 # =====================================================
-# 3️⃣ Create new SG (safe: always create unless user provided one)
+# 3️⃣ Create new SG (only if none exists)
 # =====================================================
 resource "aws_security_group" "guardium_agg_sg" {
-  count = var.existing_guardium_aggregator_sg_id != "" ? 0 : 1
+  count = (
+    var.existing_guardium_aggregator_sg_id != "" ? 0 :
+    length(try(data.aws_security_groups.guardium_agg_existing[0].ids, [])) > 0 ? 0 : 1
+  )
 
   name        = "guardium-agg-sg"
   description = "Security group for Guardium Aggregator"
@@ -90,6 +93,30 @@ resource "aws_security_group" "guardium_agg_sg" {
   })
 }
 
+# When using an existing SG, ensure port 22 (SSH) exists for allowed_cidrs.
+locals {
+  agg_using_existing_sg = (
+    var.existing_guardium_aggregator_sg_id != "" ? true :
+    length(try(data.aws_security_groups.guardium_agg_existing[0].ids, [])) > 0
+  )
+  agg_existing_sg_id = (
+    var.existing_guardium_aggregator_sg_id != "" ? var.existing_guardium_aggregator_sg_id :
+    try(data.aws_security_groups.guardium_agg_existing[0].ids[0], null)
+  )
+}
+
+resource "aws_security_group_rule" "guardium_agg_ssh_allowed_cidrs" {
+  for_each = local.agg_using_existing_sg && local.agg_existing_sg_id != null ? toset(var.allowed_cidrs) : toset([])
+
+  security_group_id = local.agg_existing_sg_id
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  description       = "SSH access (from allowed_cidrs)"
+}
+
 # =====================================================
 # 4️⃣ Call the Aggregator Module
 # =====================================================
@@ -120,8 +147,10 @@ module "guardium_aggregator" {
   resolver2        = var.resolver2
   domain           = var.domain
   timezone         = var.timezone
-  tags             = var.tags
-  assign_public_ip = var.assign_public_ip
+  shared_secret       = var.shared_secret
+  central_manager_ip  = var.central_manager_ip
+  tags                = var.tags
+  assign_public_ip    = var.assign_public_ip
 }
 
 # =====================================================
@@ -192,4 +221,3 @@ output "guardium_agg_timezone" {
   description = "Timezone configuration for the Guardium Aggregator"
   value       = var.timezone
 }
-

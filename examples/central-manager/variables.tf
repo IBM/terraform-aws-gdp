@@ -66,6 +66,42 @@ variable "assign_public_ip" {
 }
 
 # =====================================================
+# Cloud-Init (optional)
+# =====================================================
+
+variable "user_data_file" {
+  description = "Path to a Cloud-Init user-data file (e.g. #cloud-config YAML). Relative to this directory. Leave empty to omit."
+  type        = string
+  default     = ""
+}
+
+# =====================================================
+# Shared Secret (Aggregators/Collectors Registration)
+# =====================================================
+
+variable "shared_secret" {
+  description = "Shared secret that Aggregators and Collectors use to register with this Central Manager."
+  type        = string
+  default     = ""
+}
+
+# =====================================================
+# GDP License Keys (optional)
+# =====================================================
+
+variable "license_base" {
+  description = "GDP Base license key. Leave empty to skip automated license installation."
+  type        = string
+  default     = ""
+}
+
+variable "license_append" {
+  description = "GDP Append Trial license key. Leave empty to skip automated license installation."
+  type        = string
+  default     = ""
+}
+
+# =====================================================
 # DNS, Domain & Timezone
 # =====================================================
 

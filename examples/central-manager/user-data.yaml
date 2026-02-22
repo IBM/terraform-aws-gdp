@@ -1,0 +1,4 @@
+#cloud-config
+ibm:
+  guardium:
+    license_accepted: true

@@ -62,8 +62,22 @@ custom_allowed_cidrs = [
 # =====================================================
 
 # Should the GDP machine have a public IP address or be
-# accessible only through bastion.
+# accessible only through bastion. use true or false
 assign_public_ip = false
+
+# =====================================================
+# Shared Secret (for Central Manager registration)
+# =====================================================
+
+# Shared secret that must match the Central Manager. Used when registering this Collector.
+shared_secret = "guard"
+
+# =====================================================
+# Central Manager Registration
+# =====================================================
+
+# IP address of the Central Manager to register with
+central_manager_ip = "10.0.0.10"
 
 # =====================================================
 # GDP Configuration

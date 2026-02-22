@@ -76,6 +76,22 @@ variable "timezone" {
   type        = string
 }
 
+# =====================================================
+# Shared Secret (for Central Manager registration)
+# =====================================================
+
+variable "shared_secret" {
+  description = "Shared secret used to register this Collector with the Central Manager. Must match the Central Manager's shared secret."
+  type        = string
+  default     = ""
+}
+
+variable "central_manager_ip" {
+  description = "IP address of the Central Manager to register with."
+  type        = string
+  default     = ""
+}
+
 variable "allowed_cidrs" {
   description = "Base allowed CIDR ranges (same as terraform.tfvars)"
   type        = list(string)

@@ -91,7 +91,9 @@ echo "[INFO] Connection target: ${each.value.public_dns}"
   ${var.resolver1} \
   ${var.domain} \
   ${var.resolver2} \
-  ${var.timezone}
+  ${var.timezone} \
+  ${var.shared_secret} \
+  ${var.central_manager_ip}
 echo "[INFO] Completed configuration for ${each.value.hostname}"
 echo "============================================================"
 EOT

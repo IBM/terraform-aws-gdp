@@ -58,6 +58,7 @@ terraform-guardium-gdp/
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   ├── terraform.tfvars
+|   |   |-- user-data.yaml   # Cloud-init auto approve license 
 │   │   └── logs/
 │   │   │   └── configure_guardium_guardium-cm-01_20251029_141533.log
 │   ├── aggregator/
@@ -111,61 +112,6 @@ Before deploying **IBM Guardium GDP** on AWS, please review and complete the fol
    Use the following command to view available time zones and set the appropriate one for your deployment:<br>
    📗 [IBM Docs – Set time zone, date, and time](https://www.ibm.com/docs/en/gdp/12.x?topic=configuration-set-time-zone-date-time)
 
-4. **Manual Central Manager Configuration**
-   ⚠️ **Please note:** Due to license limitations, the **Central Manager (CM)** must be configured **manually** after deployment.
-   Once the instance is accessible via CLI or SSH, run the following commands to register the license and define the unit type:
-
-   ```bash
-   # ssh -i ../.ssh/Your_Key.pem cli@CM-IP               
-   >store license       
-   #Please paste the string received from customer services. Then press <ENTER> to continue.
-    
-   [info]License key has been applied.
-   [info]Please accept license agreement from the UI Setup -> License to proceed with the license installation.
-
-   #to confirm your license key 
-   >show license 
-
-   # Convert the Aggergator to Central Manager 
-   >store unit type manager
-
-   # Confirm the change
-   >show unit type
-   [info] Manager Aggregator
-   [info] ok
-
-   # Set the Shared Secret Key
-   >store system shared secret <Your_Shared_Securet_Key>
-   ```
-   You can approve the license by accessing the management interface at **https://CM-IP:8443**  <br>
-   Username: **admin** <br>
-   Password: **instance ID**  <br>
-   On the first login, you will be required to change the password to a new one. <br>
-
-   Alternatively, the license can also be installed via the Guardium **Web Console**, following IBM’s official documentation:<br>
-   🌐 [IBM Docs – Installing the Guardium license](https://www.ibm.com/docs/en/gdp/12.x?topic=iso-installing-guardium-license)
-
-   This step ensures that your Guardium environment is properly recognized as a Central Manager and can later manage other units (e.g., Aggregators and Collectors).
-
- **Important Note:**  
-Before deploying additional Aggregator or Collector Guardium instances, you **must first deploy and configure the Central Manager**.  
-Once the Central Manager is up and running, update the configuration script (`configure_guardium.expect`) and add the following CLI commands in the proper section. 
-```bash
-# ==========================================================
-# PHASE 3: Optional Configurations 
-# Optional settings — remove the # Hash.
-# ==========================================================
-
- ###send "store system shared secret <Your Secrect Key>\r" 
- >send "store system shared secret guard\r"
-  expect ">"
-
-###send "register management <Your Central Manager IP> 8443\r"
->send "register management 10.0.100.2 8443\r"
- expect ">"
-```
-These commands ensure proper registration and secure communication between the Central Manager and other Guardium nodes.
-
 
 ---
 
@@ -210,59 +156,108 @@ You can deploy multiple instances according to the value of `central_manager_cou
 
 ```hcl
 
-##############################################
-# IBM Guardium GDP – Aggregator Example Vars
-##############################################
+######################################
+# IBM Guardium GDP – Aggregator Vars
+######################################
+
+# Copy this file to terraform.tfvars and edit the values in it
+# before running "terraform plan" and "terraform apply".
 
 # =====================================================
 # AWS Region & Network
 # =====================================================
+
+# AWS region where GDP is to be created.
 region = "us-east-1"
-vpc_id          = "vpc-0b88123d60e712fe2"
-subnet_id       = "subnet-08e64682d699e4e57"
 
-# Public IP - Security Hardening
-# true  = Public-facing management zone
-# false = Private-only deployment (via Bastion)
-assign_public_ip = false
+# ID of the VPC that GDP will be created in.
+vpc_id = "vpc-0b88123d60e712fe2"
 
-
-# =====================================================
-# SSH Access Configuration
-# =====================================================
-key_name       = "guardiumcli"
-pem_file_path  = "/home/ec2-user/.ssh/guardiumcli.pem"
+# Subnet that GDP will be created in.
+subnet_id = "subnet-08e64682d699e4e57"
 
 # =====================================================
 # Guardium Aggregator Deployment
 # =====================================================
-aggregator_ami_id         = "ami-0955ca4c9f731cc20"
-aggregator_count          = 1
-aggregator_instance_type  = "m6i.2xlarge"
 
+# AMI image to be used for the GDP machine.
+aggregator_ami_id = "ami-0955ca4c9f731cc20"
+
+# AWS instance type to be used for the GDP machine.
+aggregator_instance_type = "m6i.2xlarge"
+
+# How many aggregators to create.
+aggregator_count = 1
 
 # =====================================================
-# DNS, Domain & Timezone
+# SSH Access
 # =====================================================
-resolver1 = "8.8.4.4"
-resolver2 = "1.1.1.1"
-domain    = "corp.mycompany.local"
-timezone  = "America/New_York"
+
+# Name of the key pair used to access GDP on AWS
+key_name = "my_rsa_key"
+
+# Path on the computer running this process to the PEM file
+pem_file_path  = "/home/my-user/.ssh/my_rsa_key.pem"
 
 # =====================================================
 # Security Group CIDRs
 # =====================================================
-# Default ranges (auto-populated internal + IBM trusted)
+
+# IP addresses that can access the GDP machine.
 allowed_cidrs = [
   "10.0.0.0/16",
   "170.225.223.17/32"
 ]
 
-# Optional additional CIDRs for customer or admin IPs
+# Optional custom admin IPs
 custom_allowed_cidrs = [
   # "192.168.10.0/24",
   # "203.0.113.45/32"
 ]
+
+# =====================================================
+# Public vs Private IP
+# =====================================================
+
+# Should the GDP machine have a public IP address or be
+# accessible only through bastion.use true or false
+assign_public_ip = false
+
+# =====================================================
+# Shared Secret (for Central Manager registration)
+# =====================================================
+
+# Shared secret that must match the Central Manager. Used when registering this Aggregator.
+shared_secret = "guard"
+
+# =====================================================
+# Central Manager Registration
+# =====================================================
+
+# IP address of the Central Manager to register with
+central_manager_ip = "10.0.0.10"
+
+# =====================================================
+# GDP Configuration
+# =====================================================
+
+# Domain name
+domain = "corp.mycompany.local"
+
+# Timezone
+timezone = "America/New_York"
+
+# DNS servers
+resolver1 = "8.8.4.4"
+resolver2 = "1.1.1.1"
+
+# GDP tags
+tags = {
+  Environment = "dev"
+  Project     = "GuardiumGDP"
+  Owner       = "customer@example.com"
+  Role        = "Aggregator"
+}
 
 # =====================================================
 # Existing Security Groups (optional)
@@ -272,15 +267,7 @@ existing_guardium_aggregator_sg_id = ""
 existing_guardium_cm_sg_id         = ""
 existing_guardium_collector_sg_id  = ""
 
-# =====================================================
-# Resource Tags
-# =====================================================
-tags = {
-  Owner       = "customer@example.com"
-  Environment = "dev"
-  Project     = "GuardiumGDP"
-  Role        = "Aggregator"
-}
+
 
 ```
 
@@ -437,3 +424,25 @@ So when Terraform or the Expect script does that to “test connectivity,” Gua
 It does not indicate a failure in authentication or connectivity.
 It only means Guardium’s restricted CLI rejected the test command.
 The actual SSH session is successful, so Terraform proceeds to run the configuration commands normally.
+
+**Symptom:**
+```
+Error: [WARN] A duplicate Security Group rule was found on (sg-0b93f60f0e0dda8ef). This may be
+│ a side effect of a now-fixed Terraform issue causing two security groups with
+│ identical attributes but different source_security_group_ids to overwrite each
+│ other in the state. See https://github.com/hashicorp/terraform/pull/2376 for more
+│ information and instructions for recovery. Error: operation error EC2: AuthorizeSecurityGroupIngress, https response error StatusCode: 400, RequestID: b372f65e-1770-4384-8e74-4beaead16365, api error InvalidPermission.Duplicate: the specified rule "peer: 170.225.223.17/32, TCP, from port: 22, to port: 22, ALLOW" already exists
+│ 
+│   with aws_security_group_rule.guardium_cm_ssh_allowed_cidrs["170.225.223.17/32"],
+│   on main.tf line 113, in resource "aws_security_group_rule" "guardium_cm_ssh_allowed_cidrs":
+│  113: resource "aws_security_group_rule" "guardium_cm_ssh_allowed_cidrs" {
+│ 
+```
+**Impact:**
+you can ignore this error. The rule already exists on the security group, so the desired state is already met. The Guardium configuration completed successfully.
+To avoid this error in future runs, we can add error handling so Terraform skips creating rules that already exist. Updating the code:
+Yes, you can ignore this error. The rule already exists on the security group, so the desired state is already met.
+What happened:
+The security group already has port 22 (SSH) enabled for 170.225.223.17/32
+Terraform tried to create it again → AWS returned "duplicate"
+The Guardium configuration completed successfully

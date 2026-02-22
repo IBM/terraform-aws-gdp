@@ -6,22 +6,25 @@
 set timeout 300
 
 # ---- Strict argument validation ----
-if {$argc != 10} {
-    puts "\[ERROR\] Expected 10 arguments, got $argc\nArgs: $argv"
+if {$argc != 13} {
+    puts "\[ERROR\] Expected 13 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
 # ---- Arguments (Terraform Order) ----
-set HOSTNAME      [lindex $argv 0]
-set PRIVATE_IP    [lindex $argv 1]
-set PUBLIC_DNS    [lindex $argv 2]
-set PEM_FILE      [lindex $argv 3]
-set SUBNET_MASK   [lindex $argv 4]
-set GATEWAY       [lindex $argv 5]
-set RESOLVER1     [lindex $argv 6]
-set DOMAIN        [lindex $argv 7]
-set RESOLVER2     [lindex $argv 8]
-set TIMEZONE      [lindex $argv 9]
+set HOSTNAME       [lindex $argv 0]
+set PRIVATE_IP     [lindex $argv 1]
+set PUBLIC_DNS     [lindex $argv 2]
+set PEM_FILE       [lindex $argv 3]
+set SUBNET_MASK    [lindex $argv 4]
+set GATEWAY        [lindex $argv 5]
+set RESOLVER1      [lindex $argv 6]
+set DOMAIN         [lindex $argv 7]
+set RESOLVER2      [lindex $argv 8]
+set TIMEZONE       [lindex $argv 9]
+set SHARED_SECRET  [lindex $argv 10]
+set LICENSE_BASE   [lindex $argv 11]
+set LICENSE_APPEND [lindex $argv 12]
 
 # ==========================================================
 # Determine target IP (prefer public if exists)
@@ -88,7 +91,7 @@ expect {
 # ==========================================================
 spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
 expect {
-    -re "(?i)System is now operational in CLI regular mode.*" { exp_continue }
+    -re "(?i)System is now operational in CLI regular mode" { exp_continue }
     -re {[a-zA-Z0-9._-]+>\s*} {}
     timeout {
         puts "\[WARN\] Timeout waiting for CLI prompt in phase 1 — instance may be unreachable (private subnet)."
@@ -131,7 +134,7 @@ expect {
 sleep 20
 spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
 expect {
-    -re "(?i)System is now operational.*" { exp_continue }
+    -re "(?i)System is now operational" { exp_continue }
     -re {[a-zA-Z0-9._-]+>\s*} {}
     timeout {
         puts "\[NOTE\] Timeout reconnecting — instance likely private and unreachable externally."
@@ -139,12 +142,67 @@ expect {
     }
 }
 
+# ==========================================================
+# PHASE 3: Configurations 
+# Shared secret for Aggregators/Collectors to register.
+# ==========================================================
+
+if { $SHARED_SECRET ne "" } {
+    puts "\[INFO\] Setting shared secret for Aggregator/Collector registration."
+    send "store system shared secret $SHARED_SECRET\r"
+    expect ">"
+}
+
+# ==========================================================
+# PHASE 4: GDP License Installation (optional)
+# ==========================================================
+proc install_license {key} {
+    expect ">"
+    send "store license\r"
+    expect "Please paste the string received from customer services. Then press <ENTER> to continue."
+    send "$key\r"
+    send "\r"
+    expect ">"
+}
+
+if { $LICENSE_BASE ne "" } {
+    puts "\[INFO\] Installing Base license."
+    install_license $LICENSE_BASE
+}
+
+if { $LICENSE_APPEND ne "" } {
+    puts "\[INFO\] Installing Append Trial license."
+    install_license $LICENSE_APPEND
+}
+
+catch {
+    expect {
+        eof {}
+        timeout {}
+    }
+}
+
+# ==========================================================
+# PHASE 5: GDP Convert to Central Manager commands
+# ==========================================================
+
+puts "Setting unit type to manager..."
+send -- "store unit type manager\r"
+expect ">"
+
+
+# ==========================================================
+# PHASE 6: GDP Verification commands
+# ==========================================================
+
+
 # ---- Verification commands ----
+sleep 30
 send "show network interface all\r"
 expect ">"
 send "show network routes defaultroute\r"
 expect ">"
-send "show network resolver all\r"
+send "show network resolvers all\r"
 expect ">"
 send "show system hostname\r"
 expect ">"
@@ -155,20 +213,5 @@ expect ">"
 send "show unit type\r"
 expect ">"
 
-# ==========================================================
-# PHASE 3: Optional Configurations 
-# Optional settings — remove the # Hash.
-# ==========================================================
-
-###send "store system shared secret <Your Secrect Key>\r"  # e.g. send "store system shared secret guard\r"
-#send "store system shared secret guard\r"
-#expect ">"
-
-catch {
-    expect {
-        eof {}
-        timeout {}
-    }
-}
 puts "\n✅ Guardium Configuration Completed Successfully for $HOSTNAME using $CONNECT_MODE connection ($TARGET)\n"
 

@@ -11,6 +11,7 @@ resource "aws_instance" "central_manager" {
   key_name      = var.key_name
 
   associate_public_ip_address = var.assign_public_ip
+  user_data                   = var.user_data != null && var.user_data != "" ? var.user_data : null
 
   root_block_device {
     volume_size           = 1500
@@ -80,7 +81,10 @@ echo "[INFO] Connection target: ${each.value.public_dns}"
   "${var.resolver1}" \
   "${var.domain}" \
   "${var.resolver2}" \
-  "${var.timezone}"
+  "${var.timezone}" \
+  "${var.shared_secret}" \
+  "${var.license_base}" \
+  "${var.license_append}"
 
 echo "[INFO] Completed configuration for ${each.value.hostname}"
 echo "============================================================"
