@@ -66,6 +66,14 @@ custom_allowed_cidrs = [
 assign_public_ip = false
 
 # =====================================================
+# Cloud-Init (optional)
+# =====================================================
+
+# Path to Cloud-Init user-data file (e.g. #cloud-config). Relative to examples/collector.
+# Leave empty to omit. Cloud-Init runs at first boot; Terraform then waits and runs configure.
+user_data_file = "./user-data.yaml"
+
+# =====================================================
 # Shared Secret (for Central Manager registration)
 # =====================================================
 
@@ -78,6 +86,16 @@ shared_secret = "guard"
 
 # IP address of the Central Manager to register with
 central_manager_ip = "10.0.0.10"
+
+# =====================================================
+# GDP License Keys (optional)
+# =====================================================
+
+# AWS Trial Base license. Leave empty to skip automated license installation.
+license_base = ""
+
+# Append Trial License. Leave empty to skip automated license installation.
+license_append = ""
 
 # =====================================================
 # GDP Configuration

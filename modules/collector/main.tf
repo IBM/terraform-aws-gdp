@@ -15,6 +15,7 @@ resource "aws_instance" "collector" {
 
   # Allow public IP only if explicitly configured
   associate_public_ip_address = var.assign_public_ip
+  user_data                   = var.user_data != null && var.user_data != "" ? var.user_data : null
 
   root_block_device {
     volume_size           = 550
@@ -82,18 +83,20 @@ echo "============================================================"
 echo "[INFO] Configuring Guardium Collector: ${each.value.hostname}"
 echo "[INFO] Connection target: ${each.value.public_dns}"
 /usr/bin/expect ${path.module}/configure_guardium.expect \
-  ${each.value.hostname} \
-  ${each.value.private_ip} \
-  ${each.value.public_dns} \
-  ${var.pem_file_path} \
-  ${local.subnet_mask} \
-  ${local.gateway_ip} \
-  ${var.resolver1} \
-  ${var.domain} \
-  ${var.resolver2} \
-  ${var.timezone} \
-  ${var.shared_secret} \
-  ${var.central_manager_ip}
+  "${each.value.hostname}" \
+  "${each.value.private_ip}" \
+  "${each.value.public_dns}" \
+  "${var.pem_file_path}" \
+  "${local.subnet_mask}" \
+  "${local.gateway_ip}" \
+  "${var.resolver1}" \
+  "${var.domain}" \
+  "${var.resolver2}" \
+  "${var.timezone}" \
+  "${var.shared_secret}" \
+  "${var.central_manager_ip}" \
+  "${var.license_base}" \
+  "${var.license_append}"
 echo "[INFO] Collector configuration complete for ${each.value.hostname}"
 echo "============================================================"
 EOT

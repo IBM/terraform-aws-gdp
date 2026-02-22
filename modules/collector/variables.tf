@@ -90,3 +90,21 @@ variable "assign_public_ip" {
   type        = bool
 }
 
+variable "user_data" {
+  description = "Cloud-Init user data (e.g. #cloud-config YAML). Optional; leave null to omit."
+  type        = string
+  default     = null
+}
+
+variable "license_base" {
+  description = "GDP Base license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
+variable "license_append" {
+  description = "GDP Append Trial license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+

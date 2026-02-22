@@ -92,6 +92,32 @@ variable "central_manager_ip" {
   default     = ""
 }
 
+# =====================================================
+# Cloud-Init User Data (optional)
+# =====================================================
+
+variable "user_data_file" {
+  description = "Path to Cloud-Init user-data file (e.g. #cloud-config YAML). Relative to examples/collector. Leave empty to omit."
+  type        = string
+  default     = ""
+}
+
+# =====================================================
+# GDP License Keys (optional)
+# =====================================================
+
+variable "license_base" {
+  description = "GDP Base license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
+variable "license_append" {
+  description = "GDP Append Trial license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
 variable "allowed_cidrs" {
   description = "Base allowed CIDR ranges (same as terraform.tfvars)"
   type        = list(string)

@@ -6,8 +6,8 @@
 set timeout 300
 
 # ---- Strict argument validation ----
-if {$argc != 12} {
-    puts "\[ERROR\] Expected 12 arguments, got $argc\nArgs: $argv"
+if {$argc != 14} {
+    puts "\[ERROR\] Expected 14 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
@@ -24,6 +24,8 @@ set RESOLVER2         [lindex $argv 8]
 set TIMEZONE          [lindex $argv 9]
 set SHARED_SECRET     [lindex $argv 10]
 set CENTRAL_MANAGER   [lindex $argv 11]
+set LICENSE_BASE      [lindex $argv 12]
+set LICENSE_APPEND    [lindex $argv 13]
 
 # ==========================================================
 # Determine target IP (prefer public if exists)
@@ -158,7 +160,7 @@ send "show unit type\r"
 expect ">"
 
 # ==========================================================
-# PHASE 3: Optional Configurations 
+# PHASE 3: Optional Configurations
 # Shared secret for Central Manager registration.
 # ==========================================================
 
@@ -167,6 +169,32 @@ if { $SHARED_SECRET ne "" } {
     send "store system shared secret $SHARED_SECRET\r"
     expect ">"
 }
+
+# ==========================================================
+# PHASE 4: GDP License Installation (optional)
+# ==========================================================
+proc install_license {key} {
+    expect ">"
+    send "store license\r"
+    expect "Please paste the string received from customer services. Then press <ENTER> to continue."
+    send "$key\r"
+    send "\r"
+    expect ">"
+}
+
+if { $LICENSE_BASE ne "" } {
+    puts "\[INFO\] Installing Base license."
+    install_license $LICENSE_BASE
+}
+
+if { $LICENSE_APPEND ne "" } {
+    puts "\[INFO\] Installing Append Trial license."
+    install_license $LICENSE_APPEND
+}
+
+# ==========================================================
+# PHASE 5: Central Manager Registration
+# ==========================================================
 
 if { $CENTRAL_MANAGER ne "" } {
     puts "\[INFO\] Registering with Central Manager at $CENTRAL_MANAGER."
