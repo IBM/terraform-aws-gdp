@@ -1,4 +1,10 @@
 #!/usr/bin/expect -f
+
+#
+# Copyright (c) IBM Corp. 2026
+# SPDX-License-Identifier: Apache-2.0
+#
+
 # ==========================================================
 # IBM Guardium GDP – Central Manager Auto Configuration
 # ==========================================================
@@ -156,7 +162,7 @@ send "show unit type\r"
 expect ">"
 
 # ==========================================================
-# PHASE 3: Optional Configurations 
+# PHASE 3: Optional Configurations
 # Optional settings — remove the # Hash.
 # ==========================================================
 

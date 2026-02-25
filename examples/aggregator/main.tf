@@ -1,3 +1,8 @@
+#
+# Copyright (c) IBM Corp. 2026
+# SPDX-License-Identifier: Apache-2.0
+#
+
 ##############################################
 # IBM Guardium GDP - Aggregator Example
 ##############################################
@@ -66,8 +71,8 @@ resource "aws_security_group" "guardium_agg_sg" {
       { from = 8447, to = 8447, desc = "Guardium patch/upgrade" },
       { from = 9983, to = 9983, desc = "Guardium replication/aggregation" },
       { from = 8445, to = 8445, desc = "Application usage and administration" },
-      { from = 8983, to = 8983, desc = "Solr / indexing service" }    
-    ] 
+      { from = 8983, to = 8983, desc = "Solr / indexing service" }
+    ]
     content {
       from_port   = ingress.value.from
       to_port     = ingress.value.to

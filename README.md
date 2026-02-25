@@ -217,7 +217,7 @@ This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENS
 
 ```text
 #
-# Copyright IBM Corp. 2025
+# Copyright (c) IBM Corp. 2026
 # SPDX-License-Identifier: Apache-2.0
 #
 ```
