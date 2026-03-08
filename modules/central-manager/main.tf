@@ -38,66 +38,61 @@ locals {
   gateway_ip  = cidrhost(local.subnet_cidr, 1)
 }
 
-# Wait for initial boot to stabilize before reboot
-resource "time_sleep" "wait_before_reboot" {
+# Step 1: Wait 10 minutes for initial instance boot
+resource "time_sleep" "wait_initial_boot" {
   depends_on = [aws_instance.central_manager]
   count      = var.central_manager_count
 
-  create_duration = "5m"
+  create_duration = "10m"
 
   triggers = {
     instance_id = aws_instance.central_manager[count.index].id
   }
 }
 
-# Reboot Central Manager instance (required for proper initialization)
-resource "aws_ec2_instance_state" "reboot_cm" {
+# Step 2: Stop instance (required for Central Manager to pass status checks)
+resource "aws_ec2_instance_state" "stop_cm" {
+  count       = var.central_manager_count
+  instance_id = aws_instance.central_manager[count.index].id
+  state       = "stopped"
+
+  depends_on = [time_sleep.wait_initial_boot]
+}
+
+# Step 3: Start instance back up
+resource "aws_ec2_instance_state" "start_cm" {
   count       = var.central_manager_count
   instance_id = aws_instance.central_manager[count.index].id
   state       = "running"
-  force       = true
 
-  depends_on = [time_sleep.wait_before_reboot]
+  depends_on = [aws_ec2_instance_state.stop_cm]
 }
 
-# Wait for instance to stabilize after reboot
+# Step 4: Wait 10 minutes after restart for status checks to pass
 resource "time_sleep" "wait_after_reboot" {
-  depends_on = [aws_ec2_instance_state.reboot_cm]
+  depends_on = [aws_ec2_instance_state.start_cm]
   count      = var.central_manager_count
 
-  create_duration = "3m"
+  create_duration = "10m"
 
   triggers = {
     instance_id = aws_instance.central_manager[count.index].id
   }
 }
 
-# Monitor instance status checks
-data "aws_instance" "cm_status" {
+# Step 5: Verify instance status
+data "aws_instance" "cm_status_check" {
   count       = var.central_manager_count
   instance_id = aws_instance.central_manager[count.index].id
 
   depends_on = [time_sleep.wait_after_reboot]
 }
 
-# Wait for Guardium initialization after status checks pass
-resource "time_sleep" "wait_for_guardium_init" {
-  depends_on = [data.aws_instance.cm_status]
-  count      = var.central_manager_count
-
-  create_duration = "10m"
-
-  triggers = {
-    instance_id   = aws_instance.central_manager[count.index].id
-    instance_state = data.aws_instance.cm_status[count.index].instance_state
-  }
-}
-
 # =====================================================
 # Configure Guardium using Expect Automation
 # =====================================================
 resource "null_resource" "configure_guardium" {
-  depends_on = [time_sleep.wait_for_guardium_init]
+  depends_on = [data.aws_instance.cm_status_check]
 
   for_each = {
     for idx, instance in aws_instance.central_manager :
