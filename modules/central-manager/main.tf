@@ -38,15 +38,58 @@ locals {
   gateway_ip  = cidrhost(local.subnet_cidr, 1)
 }
 
-# Wait for Guardium boot (20 min)
-resource "null_resource" "wait_for_guardium_ready" {
+# Wait for initial boot to stabilize before reboot
+resource "time_sleep" "wait_before_reboot" {
   depends_on = [aws_instance.central_manager]
+  count      = var.central_manager_count
 
-  provisioner "local-exec" {
-    command = <<EOT
-echo "[INFO] Waiting 20 minutes for Guardium Central Manager initialization..."
-sleep 1200
-EOT
+  create_duration = "5m"
+
+  triggers = {
+    instance_id = aws_instance.central_manager[count.index].id
+  }
+}
+
+# Reboot Central Manager instance (required for proper initialization)
+resource "aws_ec2_instance_state" "reboot_cm" {
+  count       = var.central_manager_count
+  instance_id = aws_instance.central_manager[count.index].id
+  state       = "running"
+  force       = true
+
+  depends_on = [time_sleep.wait_before_reboot]
+}
+
+# Wait for instance to stabilize after reboot
+resource "time_sleep" "wait_after_reboot" {
+  depends_on = [aws_ec2_instance_state.reboot_cm]
+  count      = var.central_manager_count
+
+  create_duration = "3m"
+
+  triggers = {
+    instance_id = aws_instance.central_manager[count.index].id
+  }
+}
+
+# Monitor instance status checks
+data "aws_instance" "cm_status" {
+  count       = var.central_manager_count
+  instance_id = aws_instance.central_manager[count.index].id
+
+  depends_on = [time_sleep.wait_after_reboot]
+}
+
+# Wait for Guardium initialization after status checks pass
+resource "time_sleep" "wait_for_guardium_init" {
+  depends_on = [data.aws_instance.cm_status]
+  count      = var.central_manager_count
+
+  create_duration = "10m"
+
+  triggers = {
+    instance_id   = aws_instance.central_manager[count.index].id
+    instance_state = data.aws_instance.cm_status[count.index].instance_state
   }
 }
 
@@ -54,7 +97,7 @@ EOT
 # Configure Guardium using Expect Automation
 # =====================================================
 resource "null_resource" "configure_guardium" {
-  depends_on = [null_resource.wait_for_guardium_ready]
+  depends_on = [time_sleep.wait_for_guardium_init]
 
   for_each = {
     for idx, instance in aws_instance.central_manager :
