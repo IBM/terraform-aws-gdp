@@ -1,0 +1,1 @@
+Put edge installation bundler in this directory for airgap installation
