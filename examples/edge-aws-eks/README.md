@@ -309,7 +309,7 @@ This will remove all resources in reverse order: Edge -> EKS cluster -> VPC/netw
 ## File Structure
 
 ```
-complete-e2e-aws-eks-deployment/
+edge-aws-eks/
 ├── main.tf                                    # Module + provider resource definitions
 ├── variables.tf                               # All variables
 ├── outputs.tf                                 # Combined outputs
@@ -319,9 +319,4 @@ complete-e2e-aws-eks-deployment/
 ├── .gitignore                                 # Security patterns
 └── README.md                                  # This file
 ```
-
-## Dependencies
-
-- [`aws-eks`](../aws-eks/) - EKS cluster creation (standard Terraform module)
-- [`terraform-provider-gdp-edge`](../terraform-provider-gdp-edge-native/) - Edge deployment (custom provider)
 

@@ -51,7 +51,7 @@ provider "aws" {
 # ============================================================================
 
 module "aws_eks" {
-  source = "../aws-eks"
+  source = "../../modules/aws-eks"
 
   # Control whether to deploy EKS
   deploy_eks = var.deploy_eks
