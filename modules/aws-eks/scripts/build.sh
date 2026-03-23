@@ -1,3 +1,6 @@
+# Copyright (c) IBM Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 #!/usr/bin/env bash
 # Build vpc-cleanup binaries for all supported platforms.
 # Run this once after cloning, or when Go source changes.

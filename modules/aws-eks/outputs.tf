@@ -1,3 +1,6 @@
+// Copyright (c) IBM Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 output "cluster_id" {
   description = "The ID of the EKS cluster"
   value       = var.deploy_eks ? module.eks[0].cluster_id : data.aws_eks_cluster.existing[0].id

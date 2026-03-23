@@ -1,3 +1,6 @@
+# Copyright (c) IBM Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 #!/usr/bin/env bash
 # Detects the current OS/architecture and runs the matching vpc-cleanup binary.
 # Falls back to building from source if the binary is missing and Go is available.

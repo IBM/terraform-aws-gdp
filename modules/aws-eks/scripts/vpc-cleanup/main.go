@@ -1,3 +1,6 @@
+// Copyright (c) IBM Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 // vpc-cleanup deletes AWS resources orphaned inside a VPC by Kubernetes
 // (load balancers, ENIs) that are not tracked by Terraform and would otherwise
 // block VPC/subnet/IGW deletion during `terraform destroy`.
@@ -33,10 +36,10 @@ import (
 )
 
 func main() {
-	vpcID           := flag.String("vpc-id", "", "VPC ID to clean up (required)")
-	region          := flag.String("region", "", "AWS region (required)")
-	profile         := flag.String("profile", "", "AWS named profile (aws_profile from terraform.tfvars)")
-	accessKeyID     := flag.String("access-key-id", "", "AWS access key ID (aws_access_key_id from terraform.tfvars)")
+	vpcID := flag.String("vpc-id", "", "VPC ID to clean up (required)")
+	region := flag.String("region", "", "AWS region (required)")
+	profile := flag.String("profile", "", "AWS named profile (aws_profile from terraform.tfvars)")
+	accessKeyID := flag.String("access-key-id", "", "AWS access key ID (aws_access_key_id from terraform.tfvars)")
 	secretAccessKey := flag.String("secret-access-key", "", "AWS secret access key (aws_secret_access_key from terraform.tfvars)")
 	flag.Parse()
 

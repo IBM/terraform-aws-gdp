@@ -1,3 +1,6 @@
+// Copyright (c) IBM Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 # AWS EKS Cluster Terraform Configuration
 
 This Terraform configuration creates an AWS EKS (Elastic Kubernetes Service) cluster based on the specifications defined in the YAML configuration files.

@@ -1,3 +1,6 @@
+// Copyright (c) IBM Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 # Complete AWS EKS Deployment Variables - Unified Provider Edition
 # Uses aws-eks module and guardium-data-protection provider
 
