@@ -92,7 +92,7 @@ install_edge = false
 # edge_oauth_token = "your-oauth-token-here"
 
 # Option 2: Use local bundle directory
-# edge_bundle_directory = "/path/to/local/edge-bundle"
+# edge_bundle_directory = "/path/to/local/edge-bundle-directory"
 
 # Edge monitoring configuration
 edge_monitor_max_attempts   = 180  # ~30 min with 10s interval

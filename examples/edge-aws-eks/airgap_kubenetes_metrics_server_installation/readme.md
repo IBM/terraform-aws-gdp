@@ -1,1 +1,0 @@
-Put Kubernetes metrics server yaml file in this directory for airgap installation
