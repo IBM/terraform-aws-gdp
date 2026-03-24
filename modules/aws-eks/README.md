@@ -32,8 +32,6 @@ This configuration provisions:
 - [`variables.tf`](variables.tf) - Variable definitions with defaults
 - [`outputs.tf`](outputs.tf) - Output values after deployment
 - [`terraform.tfvars.example`](terraform.tfvars.example) - Example variable values
-- [`cluster-gm.yaml`](cluster-gm.yaml) - Original eksctl configuration (reference)
-- [`storage-classes.yaml`](storage-classes.yaml) - Storage class definitions (reference)
 
 ## Quick Start
 

@@ -25,7 +25,7 @@ All in **one `terraform apply` command**! Resources are applied in the order lis
 | `hashicorp/kubernetes` | `hashicorp/kubernetes` | — | Kubernetes API access |
 | `hashicorp/http` | `hashicorp/http` | `data.http` | Fetch Metrics Server manifest (online mode) |
 | `gavinbunney/kubectl` | `gavinbunney/kubectl` | `kubectl_manifest` | Apply Metrics Server manifests |
-| `ibm/guardium-data-protection` | `registry.terraform.io/ibm/guardium-data-protection` | `guardium-data-protection_deployment` | Deploy Edge components |
+| `ibm/guardium-data-protection` | `hashicorp.com/ibm/guardium-data-protection` | `guardium-data-protection_deployment` | Deploy Edge components |
 
 ## Deployment Modes
 

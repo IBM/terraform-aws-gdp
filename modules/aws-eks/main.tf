@@ -25,6 +25,13 @@ terraform {
       source  = "hashicorp/null"
       version = "~> 3.0"
     }
+     guardium-data-protection = {
+      # For internal testing with IBM Artifactory
+      # source  = "registry.terraform.io/ibm/guardium-data-protection"
+      # For public release (uncomment when published to HashiCorp registry)
+      source  = "hashicorp.com/ibm/guardium-data-protection"
+      version = "1.0.0"
+    }
   }
 }
 
@@ -77,44 +84,22 @@ module "vpc" {
 
 # ---------------------------------------------------------------------------
 # VPC Cleanup — remove AWS resources created dynamically by Kubernetes
-# (ALB/NLB load balancers, orphaned ENIs) that are NOT tracked by Terraform
-# and would otherwise cause DependencyViolation errors on VPC/subnet/IGW
-# deletion during `terraform destroy`.
+# (ALB/NLB load balancers, NAT Gateways, security groups, orphaned ENIs)
+# that are NOT tracked by Terraform and would otherwise cause
+# DependencyViolation errors on VPC/subnet/IGW deletion during
+# `terraform destroy`.
 #
 # Destroy ordering (enforced by depends_on chains):
-#   module.eks destroyed  →  null_resource.vpc_cleanup destroyed
-#     (Go binary runs here, deletes orphaned LBs + ENIs)
+#   module.eks destroyed  →  guardium-data-protection_aws_vpc_cleanup destroyed
+#     (provider Delete() runs here, deletes orphaned resources via AWS SDK)
 #   →  module.vpc destroyed  (subnets and IGW now clean)
-#
-# Prerequisites:
-#   Run `bash scripts/build.sh` once after cloning to produce the pre-built
-#   binaries in scripts/bin/.  The wrapper script falls back to `go build`
-#   automatically if Go is installed and a binary is not yet present.
-resource "null_resource" "vpc_cleanup" {
-  count = var.deploy_eks ? 1 : 0
-
-  # Store values needed at destroy time in triggers. Module outputs are no
-  # longer accessible once a module is being destroyed, but trigger values
-  # are always available from Terraform state.
-  triggers = {
-    vpc_id    = module.vpc[0].vpc_id
-    region    = var.aws_region
-    profile   = var.aws_profile
-    access_key = var.aws_access_key_id
-    secret_key = var.aws_secret_access_key
-  }
-
-  provisioner "local-exec" {
-    when    = destroy
-    command = <<-EOT
-      bash "${path.module}/scripts/run-vpc-cleanup.sh" \
-        --vpc-id "${self.triggers.vpc_id}" \
-        --region "${self.triggers.region}" \
-        --profile "${self.triggers.profile}" \
-        --access-key-id "${self.triggers.access_key}" \
-        --secret-access-key "${self.triggers.secret_key}"
-    EOT
-  }
+resource "guardium-data-protection_aws_vpc_cleanup" "vpc_cleanup" {
+  count             = var.deploy_eks ? 1 : 0
+  vpc_id            = module.vpc[0].vpc_id
+  region            = var.aws_region
+  profile           = var.aws_profile
+  access_key_id     = var.aws_access_key_id
+  secret_access_key = var.aws_secret_access_key
 
   depends_on = [module.vpc]
 }
@@ -184,9 +169,9 @@ module "eks" {
   tags = var.tags
 
   # Ensures that during `terraform destroy`, module.eks is torn down BEFORE
-  # null_resource.vpc_cleanup runs (which deletes LBs/ENIs), which in turn
-  # runs BEFORE module.vpc is destroyed.
-  depends_on = [null_resource.vpc_cleanup]
+  # guardium-data-protection_aws_vpc_cleanup runs (which deletes orphaned
+  # LBs/ENIs), which in turn runs BEFORE module.vpc is destroyed.
+  depends_on = [guardium-data-protection_aws_vpc_cleanup.vpc_cleanup]
 }
 
 # Security group for SSH access to nodes

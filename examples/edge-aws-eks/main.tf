@@ -10,9 +10,9 @@ terraform {
   required_providers {
     guardium-data-protection = {
       # For internal testing with IBM Artifactory
-      source  = "registry.terraform.io/ibm/guardium-data-protection"
+      # source  = "registry.terraform.io/ibm/guardium-data-protection"
       # For public release (uncomment when published to HashiCorp registry)
-      # source  = "hashicorp.com/ibm/guardium-data-protection"
+      source  = "hashicorp.com/ibm/guardium-data-protection"
       version = "1.0.0"
     }
     aws = {
@@ -55,6 +55,10 @@ provider "aws" {
 
 module "aws_eks" {
   source = "../../modules/aws-eks"
+
+  providers = {
+    guardium-data-protection = guardium-data-protection
+  }
 
   # Control whether to deploy EKS
   deploy_eks = var.deploy_eks
