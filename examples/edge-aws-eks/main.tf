@@ -1,5 +1,5 @@
-// Copyright (c) IBM Corporation
-// SPDX-License-Identifier: Apache-2.0
+# Copyright (c) IBM Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 # Complete AWS EKS Deployment with Edge - Unified Provider Edition
 # Uses aws-eks module for cluster creation and guardium-data-protection provider for Edge deployment

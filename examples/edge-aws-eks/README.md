@@ -1,6 +1,3 @@
-// Copyright (c) IBM Corporation
-// SPDX-License-Identifier: Apache-2.0
-
 # Complete End-to-End AWS EKS Deployment with Edge
 
 This is a **complete end-to-end solution** that combines AWS EKS cluster creation and optional Edge deployment in a single Terraform deployment. It uses the [`aws-eks`](../aws-eks/) module for cluster infrastructure and the unified [`terraform-provider-guardium-data-protection`](https://github.com/IBM/terraform-provider-guardium-data-protection) provider for Edge deployment.

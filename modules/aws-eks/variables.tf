@@ -1,5 +1,5 @@
-// Copyright (c) IBM Corporation
-// SPDX-License-Identifier: Apache-2.0
+# Copyright (c) IBM Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 variable "deploy_eks" {
   description = "Whether to deploy EKS cluster resources (set to false to skip deployment)"
