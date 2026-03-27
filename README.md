@@ -9,6 +9,7 @@ The following are supported:
 * Central Manager
 * Aggregator
 * Collector
+* Edge Gateway
 
 For background and detailed technical information, see the [project info document](docs/project_info.md).
 
@@ -201,6 +202,63 @@ module "collector" {
               }
 }
 ```
+
+### Edge Gateway
+
+Deploy edge gateway on AWS EKS:
+
+```hcl
+module "edge" {
+
+  # AWS EKS cluster name
+  aws_region                             = "us-east-1"
+  aws_profile                            = "my-aws-profile"
+            
+  vpc_cidr                               = "10.0.0.0/16"
+  private_subnet_cidrs                   = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnet_cidrs                    = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+            
+  node_group_name                        = "ng-edge"
+  node_instance_type                     = "m5.4xlarge"
+  node_group_min_size                    = 1
+  node_group_max_size                    = 4
+  node_group_desired_size                = 2
+  node_volume_size                       = 500
+            
+  create_efs                             = true
+  ebs_csi_driver_version                 = null
+
+  cluster_name                           = "my-eks-cluster"
+  kubernetes_version                     = "1.33"
+
+  k8s_metrics_server_install             = true
+  k8s_metrics_server_airgap_install      = true
+  k8s_metrics_server_airgap_install_path = "/path/metrics-server-yaml"
+
+
+  tags                                   = {
+                                              Environment = "aws"
+                                              ManagedBy   = "terraform"
+                                              Project     = "edge-gateway"
+                                              Owner       = "your-name"
+                                           }
+               
+
+  # Edge Gateway Configuration
+  edge_name                              = "my-edge"
+  edge_bundle_directory                  = "/path/to/edge-bundle/my-edge"
+
+  platform                               = "eks"
+  external_image_registry                = true
+
+  monitor_max_attempts                   = 180
+  monitor_sleep_interval                 = 10
+  cleanup_bundle                         = true
+  delete_timeout                         = "2h"
+
+}
+```
+
 ## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.

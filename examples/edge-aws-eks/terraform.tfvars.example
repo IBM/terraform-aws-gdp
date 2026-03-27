@@ -1,0 +1,191 @@
+# Copyright (c) IBM Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# Complete AWS EKS Deployment - Example Configuration (Custom Provider Edition)
+# Copy this file to terraform.tfvars and fill in your values
+
+# ============================================================================
+# Deployment Control
+# ============================================================================
+
+# Set to true to deploy EKS cluster (default)
+# Set to false to skip EKS creation and only deploy Edge to existing cluster
+deploy_eks = true
+
+# If deploy_eks = false, specify existing cluster name
+# external_eks_cluster_name = "my-existing-eks-cluster"
+
+# ============================================================================
+# AWS Credentials (Choose one method)
+# ============================================================================
+
+# Method 1: Use AWS Profile (Recommended)
+aws_profile = "default"
+aws_region  = "us-east-2"
+
+# Method 2: Use Access Keys (Alternative)
+# aws_access_key_id     = "YOUR_AWS_ACCESS_KEY_ID"
+# aws_secret_access_key = "YOUR_AWS_SECRET_ACCESS_KEY"
+# aws_region            = "us-east-2"
+
+# ============================================================================
+# EKS Cluster Configuration
+# ============================================================================
+
+cluster_name       = "edge-eks-gm"
+kubernetes_version = "1.33"
+
+# ============================================================================
+# Network Configuration
+# ============================================================================
+
+vpc_cidr             = "10.0.0.0/16"
+private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+public_subnet_cidrs  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+# ============================================================================
+# Node Configuration
+# ============================================================================
+
+node_group_name         = "group-name"
+node_instance_type      = "m5.4xlarge"
+node_group_min_size     = 1
+node_group_max_size     = 4
+node_group_desired_size = 2
+node_volume_size        = 500
+
+# ============================================================================
+# SSH Configuration
+# ============================================================================
+
+ssh_key_name            = "my-eks-key"
+ssh_allowed_cidr_blocks = ["0.0.0.0/0"]  # Restrict this in production!
+
+# ============================================================================
+# Storage Configuration
+# ============================================================================
+
+create_efs             = true
+ebs_csi_driver_version = null  # Uses latest if null
+efs_csi_driver_version = null  # Uses latest if null
+
+# ============================================================================
+# Tags
+# ============================================================================
+
+tags = {
+  Environment = "development"
+  ManagedBy   = "terraform"
+  Project     = "guardium-jewel"
+  Owner       = "your-name"
+}
+
+# ============================================================================
+# Edge Deployment Configuration (Optional - uses custom gdp-edge provider)
+# ============================================================================
+
+install_edge = false
+
+# Option 1: Download bundle from CM
+# edge_name        = "my-edge-cluster"
+# edge_cm_url      = "https://guardium-insights.example.com"
+# edge_oauth_token = "your-oauth-token-here"
+
+# Option 2: Use local bundle directory
+# edge_bundle_directory = "/path/to/local/edge-bundle-directory"
+
+# Edge monitoring configuration
+edge_monitor_max_attempts   = 180  # ~30 min with 10s interval
+edge_monitor_sleep_interval = 10
+
+# Cleanup bundle after deployment
+edge_cleanup_bundle = true
+
+# Set to true when using an external image registry (e.g. Docker Hub, Quay) instead of the CM private registry
+# Skips registry certificate installation on cluster nodes
+# external_image_registry = false
+
+# ============================================================================
+# Kubernetes Metrics Server Configuration (Optional)
+# ============================================================================
+
+# Set to true to install the Kubernetes Metrics Server (required for kubectl top / HPA)
+k8s_metrics_server_install = false
+
+# Online install (default): fetches components.yaml from GitHub at apply time
+# k8s_mertics_server_airgap_install         = false
+# k8s_metrics_server_airgap_install_path    = ""
+
+# Airgap install: reads *.yaml / *.yml files from a local directory
+# Set the path relative to the directory where you run terraform apply,
+# or use an absolute path accessible on the machine running Terraform.
+# k8s_mertics_server_airgap_install         = true
+# k8s_metrics_server_airgap_install_path    = "./airgap_kubenetes_metrics_server_installation/"
+
+# ============================================================================
+# Edge EKS-Specific Configuration (required if install_edge = true)
+# ============================================================================
+
+# eks_hostname_type = "public"              # or "private"
+# eks_ssh_user      = "ec2-user"
+# eks_ssh_key_path  = "/path/to/your/private-key.pem"
+# eks_ssh_key_passphrase = "passphrase for ssh key"
+
+# Node subnet placement — controls whether worker nodes get a public IP.
+#   "private" (default): nodes in private subnets, no direct internet exposure.
+#                        Requires VPN, bastion, or AWS Systems Manager for SSH access.
+#   "public":            nodes in public subnets with a public IP assigned.
+#                        Required when SSH'ing directly from outside the VPC
+#                        (e.g. running Terraform from a laptop with no VPN/bastion).
+# node_group_subnet_type = "private"       # default — nodes in private subnets
+# node_group_subnet_type = "public"        # nodes get public IPs; needed for direct SSH
+
+# ============================================================================
+# Example 1: Minimal EKS Cluster (No Edge)
+# ============================================================================
+# cluster_name            = "my-eks-cluster"
+# aws_profile             = "default"
+# aws_region              = "us-east-2"
+# ssh_key_name            = "my-key"
+# node_group_desired_size = 2
+# install_edge            = false
+
+# ============================================================================
+# Example 2: EKS with Edge Deployment
+# ============================================================================
+# cluster_name            = "edge-eks-prod"
+# aws_profile             = "production"
+# aws_region              = "us-east-1"
+# ssh_key_name            = "prod-key"
+# node_group_desired_size = 3
+# install_edge            = true
+# edge_name               = "prod-edge"
+# edge_cm_url             = "https://guardium-insights.example.com"
+# edge_oauth_token        = "token-from-cm"
+# eks_ssh_key_path        = "~/.ssh/prod-key.pem"
+# eks_hostname_type       = "public"
+
+# ============================================================================
+# Example 3: Large Cluster with Custom Network
+# ============================================================================
+# cluster_name            = "large-eks-cluster"
+# vpc_cidr                = "172.16.0.0/16"
+# private_subnet_cidrs    = ["172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24"]
+# public_subnet_cidrs     = ["172.16.101.0/24", "172.16.102.0/24", "172.16.103.0/24"]
+# node_instance_type      = "m5.8xlarge"
+# node_group_desired_size = 5
+# node_volume_size        = 1000
+
+# ============================================================================
+# Example 4: Edge-Only Deployment to Existing EKS Cluster
+# ============================================================================
+# deploy_eks                = false
+# external_eks_cluster_name = "my-existing-eks"
+# aws_region                = "us-east-2"
+# aws_profile               = "default"
+# install_edge              = true
+# edge_name                 = "my-edge"
+# edge_cm_url               = "https://guardium-insights.example.com"
+# edge_oauth_token          = "your-oauth-token"
+# eks_ssh_key_path          = "~/.ssh/my-key.pem"
+# eks_hostname_type         = "public"
