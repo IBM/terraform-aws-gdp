@@ -13,7 +13,7 @@ terraform {
       # source  = "registry.terraform.io/ibm/guardium-data-protection"
       # For public release (uncomment when published to HashiCorp registry)
       source  = "hashicorp.com/ibm/guardium-data-protection"
-      version = "1.0.0"
+      version = "~>1.3.8"
     }
     aws = {
       source  = "hashicorp/aws"

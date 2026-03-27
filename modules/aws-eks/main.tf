@@ -1,6 +1,7 @@
 # Copyright (c) IBM Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# Deploy AWS EKS
 terraform {
   required_version = ">= 1.0"
 
@@ -30,7 +31,7 @@ terraform {
       # source  = "registry.terraform.io/ibm/guardium-data-protection"
       # For public release (uncomment when published to HashiCorp registry)
       source  = "hashicorp.com/ibm/guardium-data-protection"
-      version = "1.0.0"
+      version = "~> 1.3.8"
     }
   }
 }
