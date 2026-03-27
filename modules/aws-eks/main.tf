@@ -27,11 +27,8 @@ terraform {
       version = "~> 3.0"
     }
      guardium-data-protection = {
-      # For internal testing with IBM Artifactory
-      # source  = "registry.terraform.io/ibm/guardium-data-protection"
-      # For public release (uncomment when published to HashiCorp registry)
-      source  = "hashicorp.com/ibm/guardium-data-protection"
-      version = "~> 1.3.8"
+      source  = "IBM/guardium-data-protection"
+      version = "> 1.4.0"
     }
   }
 }
