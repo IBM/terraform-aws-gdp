@@ -1,3 +1,8 @@
+#
+# Copyright (c) IBM Corp. 2026
+# SPDX-License-Identifier: Apache-2.0
+#
+
 #############################################
 # Outputs - Guardium Central Manager module #
 #############################################
