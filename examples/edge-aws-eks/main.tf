@@ -9,11 +9,8 @@ terraform {
   required_version = ">= 1.2"  # lifecycle preconditions require >= 1.2
   required_providers {
     guardium-data-protection = {
-      # For internal testing with IBM Artifactory
-      # source  = "registry.terraform.io/ibm/guardium-data-protection"
-      # For public release (uncomment when published to HashiCorp registry)
-      source  = "hashicorp.com/ibm/guardium-data-protection"
-      version = "~>1.3.8"
+      source  = "IBM/guardium-data-protection"
+      version = "~> 1.4.0"
     }
     aws = {
       source  = "hashicorp/aws"
@@ -53,7 +50,7 @@ provider "aws" {
 # Module 1: Create AWS EKS Cluster (Optional)
 # ============================================================================
 
-module "aws_eks" {
+module "gdp_aws-eks" {
   source = "../../modules/aws-eks"
 
   providers = {
@@ -113,16 +110,16 @@ module "aws_eks" {
 # ============================================================================
 
 locals {
-  eks_cluster_name = var.deploy_eks ? module.aws_eks.cluster_name : (
+  eks_cluster_name = var.deploy_eks ? module.gdp_aws-eks.cluster_name : (
     var.external_eks_cluster_name != "" ? var.external_eks_cluster_name : var.cluster_name
   )
 }
 
-resource "guardium-data-protection_deployment" "edge" {
+resource "guardium-data-protection_edge_deploy" "edge" {
   count    = var.install_edge ? 1 : 0
   provider = guardium-data-protection
 
-  depends_on = [module.aws_eks]
+  depends_on = [module.gdp_aws-eks]
 
   # Bundle source - use either edge_name (download from CM) or bundle_directory (local)
   edge_name             = var.edge_name
@@ -132,7 +129,7 @@ resource "guardium-data-protection_deployment" "edge" {
   platform = "eks"
 
   # EKS configuration
-  eks_cluster_name = var.deploy_eks ? module.aws_eks.cluster_name : var.external_eks_cluster_name
+  eks_cluster_name = var.deploy_eks ? module.gdp_aws-eks.cluster_name : var.external_eks_cluster_name
 
   # Monitoring configuration
   monitor_max_attempts   = var.edge_monitor_max_attempts
