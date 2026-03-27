@@ -10,7 +10,7 @@ terraform {
   required_providers {
     guardium-data-protection = {
       source  = "IBM/guardium-data-protection"
-      version = "> 1.4.0"
+      version = "~> 1.4.0"
     }
     aws = {
       source  = "hashicorp/aws"
@@ -50,7 +50,7 @@ provider "aws" {
 # Module 1: Create AWS EKS Cluster (Optional)
 # ============================================================================
 
-module "aws_eks" {
+module "gdp_aws-eks" {
   source = "../../modules/aws-eks"
 
   providers = {
@@ -110,7 +110,7 @@ module "aws_eks" {
 # ============================================================================
 
 locals {
-  eks_cluster_name = var.deploy_eks ? module.aws_eks.cluster_name : (
+  eks_cluster_name = var.deploy_eks ? module.gdp_aws-eks.cluster_name : (
     var.external_eks_cluster_name != "" ? var.external_eks_cluster_name : var.cluster_name
   )
 }
@@ -119,7 +119,7 @@ resource "guardium-data-protection_deployment" "edge" {
   count    = var.install_edge ? 1 : 0
   provider = guardium-data-protection
 
-  depends_on = [module.aws_eks]
+  depends_on = [module.gdp_aws-eks]
 
   # Bundle source - use either edge_name (download from CM) or bundle_directory (local)
   edge_name             = var.edge_name
@@ -129,7 +129,7 @@ resource "guardium-data-protection_deployment" "edge" {
   platform = "eks"
 
   # EKS configuration
-  eks_cluster_name = var.deploy_eks ? module.aws_eks.cluster_name : var.external_eks_cluster_name
+  eks_cluster_name = var.deploy_eks ? module.gdp_aws-eks.cluster_name : var.external_eks_cluster_name
 
   # Monitoring configuration
   monitor_max_attempts   = var.edge_monitor_max_attempts
