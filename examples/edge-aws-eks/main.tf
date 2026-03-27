@@ -115,7 +115,7 @@ locals {
   )
 }
 
-resource "guardium-data-protection_deployment" "edge" {
+resource "guardium-data-protection_edge_deploy" "edge" {
   count    = var.install_edge ? 1 : 0
   provider = guardium-data-protection
 

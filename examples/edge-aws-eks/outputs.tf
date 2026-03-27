@@ -151,40 +151,40 @@ output "edge_installed" {
 
 output "edge_namespace" {
   description = "Kubernetes namespace where Edge components are deployed (if installed)"
-  value       = var.install_edge ? guardium-data-protection_deployment.edge[0].edge_namespace : null
+  value       = var.install_edge ? guardium-data-protection_edge_deploy.edge[0].edge_namespace : null
 }
 
 output "edge_registry_url" {
   description = "Container registry URL used by the Edge deployment (if installed)"
-  value       = var.install_edge ? guardium-data-protection_deployment.edge[0].registry_url : null
+  value       = var.install_edge ? guardium-data-protection_edge_deploy.edge[0].registry_url : null
 }
 
 output "edge_platform" {
   description = "Platform where Edge is deployed (if installed)"
-  value       = var.install_edge ? guardium-data-protection_deployment.edge[0].platform : null
+  value       = var.install_edge ? guardium-data-protection_edge_deploy.edge[0].platform : null
 }
 
 output "edge_deployment_status" {
   description = "Edge deployment status message (if installed)"
-  value       = var.install_edge ? guardium-data-protection_deployment.edge[0].deployment_status : null
+  value       = var.install_edge ? guardium-data-protection_edge_deploy.edge[0].deployment_status : null
 }
 
 output "edge_work_dir" {
   description = "Working directory for the edge bundle (if installed)"
-  value       = var.install_edge ? guardium-data-protection_deployment.edge[0].work_dir : null
+  value       = var.install_edge ? guardium-data-protection_edge_deploy.edge[0].work_dir : null
 }
 
 output "edge_summary" {
   description = "Edge deployment summary (if installed)"
   value = var.install_edge ? join("\n", [
     "Edge Deployment Summary:",
-    "  Namespace: ${guardium-data-protection_deployment.edge[0].edge_namespace}",
-    "  Platform:  ${guardium-data-protection_deployment.edge[0].platform}",
-    "  Status:    ${guardium-data-protection_deployment.edge[0].deployment_status}",
+    "  Namespace: ${guardium-data-protection_edge_deploy.edge[0].edge_namespace}",
+    "  Platform:  ${guardium-data-protection_edge_deploy.edge[0].platform}",
+    "  Status:    ${guardium-data-protection_edge_deploy.edge[0].deployment_status}",
     "",
     "To check status:",
-    "  kubectl get configmap edge-controller-client-cm -n ${guardium-data-protection_deployment.edge[0].edge_namespace} -o yaml",
-    "  kubectl get pods -n ${guardium-data-protection_deployment.edge[0].edge_namespace}",
+    "  kubectl get configmap edge-controller-client-cm -n ${guardium-data-protection_edge_deploy.edge[0].edge_namespace} -o yaml",
+    "  kubectl get pods -n ${guardium-data-protection_edge_deploy.edge[0].edge_namespace}",
   ]) : null
 }
 
@@ -204,8 +204,8 @@ output "deployment_summary" {
     ebs_storage_class  = var.deploy_eks ? module.gdp_aws-eks.ebs_storage_class_name : null
     efs_storage_class  = var.deploy_eks ? module.gdp_aws-eks.efs_storage_class_name : null
     edge_installed     = var.install_edge
-    edge_namespace     = var.install_edge ? guardium-data-protection_deployment.edge[0].edge_namespace : null
-    edge_status        = var.install_edge ? guardium-data-protection_deployment.edge[0].deployment_status : null
+    edge_namespace     = var.install_edge ? guardium-data-protection_edge_deploy.edge[0].edge_namespace : null
+    edge_status        = var.install_edge ? guardium-data-protection_edge_deploy.edge[0].deployment_status : null
   }
 }
 
@@ -233,7 +233,7 @@ output "access_instructions" {
     "4. Check storage classes:",
     "   kubectl get storageclass",
     "",
-    var.install_edge ? "5. Check Edge deployment:\n   kubectl get pods -n ${guardium-data-protection_deployment.edge[0].edge_namespace}\n" : "",
+    var.install_edge ? "5. Check Edge deployment:\n   kubectl get pods -n ${guardium-data-protection_edge_deploy.edge[0].edge_namespace}\n" : "",
     "============================================================",
   ]) : join("\n", [
     "============================================================",
@@ -243,7 +243,7 @@ output "access_instructions" {
     "Note: For an existing cluster, configure kubectl manually:",
     "  export KUBECONFIG=/path/to/your/kubeconfig",
     "",
-    var.install_edge ? "Check Edge deployment:\n   kubectl get pods -n ${guardium-data-protection_deployment.edge[0].edge_namespace}\n" : "",
+    var.install_edge ? "Check Edge deployment:\n   kubectl get pods -n ${guardium-data-protection_edge_deploy.edge[0].edge_namespace}\n" : "",
     "============================================================",
   ])
 }
