@@ -18,6 +18,9 @@ resource "aws_instance" "collector" {
   vpc_security_group_ids = var.vpc_security_group_ids
   key_name      = var.key_name
 
+  # IAM instance profile for AWS service access (e.g., CloudWatch, S3, SQS)
+  iam_instance_profile = var.iam_instance_profile
+
   # Allow public IP only if explicitly configured
   associate_public_ip_address = var.assign_public_ip
   user_data                   = var.user_data != null && var.user_data != "" ? var.user_data : null
