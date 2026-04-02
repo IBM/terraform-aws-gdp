@@ -106,10 +106,15 @@ variable "license_base" {
   type        = string
   default     = ""
 }
-
 variable "license_append" {
   description = "GDP Append Trial license key for automated installation. Leave empty to skip."
   type        = string
   default     = ""
+}
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile name or ARN to attach to the collector instance for AWS service access"
+  type        = string
+  default     = null
 }
 
