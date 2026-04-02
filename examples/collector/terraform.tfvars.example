@@ -67,8 +67,40 @@ custom_allowed_cidrs = [
 # =====================================================
 
 # Should the GDP machine have a public IP address or be
-# accessible only through bastion.
+# accessible only through bastion. use true or false
 assign_public_ip = false
+
+# =====================================================
+# Cloud-Init (optional)
+# =====================================================
+
+# Path to Cloud-Init user-data file (e.g. #cloud-config). Relative to examples/collector.
+# Leave empty to omit. Cloud-Init runs at first boot; Terraform then waits and runs configure.
+user_data_file = "./user-data.yaml"
+
+# =====================================================
+# Shared Secret (for Central Manager registration)
+# =====================================================
+
+# Shared secret that must match the Central Manager. Used when registering this Collector.
+shared_secret = "guard"
+
+# =====================================================
+# Central Manager Registration
+# =====================================================
+
+# IP address of the Central Manager to register with
+central_manager_ip = "10.0.0.10"
+
+# =====================================================
+# GDP License Keys (optional)
+# =====================================================
+
+# AWS Trial Base license. Leave empty to skip automated license installation.
+license_base = ""
+
+# Append Trial License. Leave empty to skip automated license installation.
+license_append = ""
 
 # =====================================================
 # GDP Configuration

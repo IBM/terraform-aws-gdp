@@ -12,22 +12,24 @@
 set timeout 300
 
 # ---- Strict argument validation ----
-if {$argc != 10} {
-    puts "\[ERROR\] Expected 10 arguments, got $argc\nArgs: $argv"
+if {$argc != 12} {
+    puts "\[ERROR\] Expected 12 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
 # ---- Arguments (Terraform Order) ----
-set HOSTNAME      [lindex $argv 0]
-set PRIVATE_IP    [lindex $argv 1]
-set PUBLIC_DNS    [lindex $argv 2]
-set PEM_FILE      [lindex $argv 3]
-set SUBNET_MASK   [lindex $argv 4]
-set GATEWAY       [lindex $argv 5]
-set RESOLVER1     [lindex $argv 6]
-set DOMAIN        [lindex $argv 7]
-set RESOLVER2     [lindex $argv 8]
-set TIMEZONE      [lindex $argv 9]
+set HOSTNAME          [lindex $argv 0]
+set PRIVATE_IP        [lindex $argv 1]
+set PUBLIC_DNS        [lindex $argv 2]
+set PEM_FILE          [lindex $argv 3]
+set SUBNET_MASK       [lindex $argv 4]
+set GATEWAY           [lindex $argv 5]
+set RESOLVER1         [lindex $argv 6]
+set DOMAIN            [lindex $argv 7]
+set RESOLVER2         [lindex $argv 8]
+set TIMEZONE          [lindex $argv 9]
+set SHARED_SECRET     [lindex $argv 10]
+set CENTRAL_MANAGER   [lindex $argv 11]
 
 # ==========================================================
 # Determine target IP (prefer public if exists)
@@ -94,7 +96,7 @@ expect {
 # ==========================================================
 spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
 expect {
-    -re "(?i)System is now operational in CLI regular mode.*" { exp_continue }
+    -re "(?i)System is now operational in CLI regular mode" { exp_continue }
     -re {[a-zA-Z0-9._-]+>\s*} {}
     timeout {
         puts "\[WARN\] Timeout waiting for CLI prompt in phase 1 — instance may be unreachable (private subnet)."
@@ -137,7 +139,7 @@ expect {
 sleep 20
 spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
 expect {
-    -re "(?i)System is now operational.*" { exp_continue }
+    -re "(?i)System is now operational" { exp_continue }
     -re {[a-zA-Z0-9._-]+>\s*} {}
     timeout {
         puts "\[NOTE\] Timeout reconnecting — instance likely private and unreachable externally."
@@ -150,7 +152,7 @@ send "show network interface all\r"
 expect ">"
 send "show network routes defaultroute\r"
 expect ">"
-send "show network resolver all\r"
+send "show network resolvers all\r"
 expect ">"
 send "show system hostname\r"
 expect ">"
@@ -163,16 +165,20 @@ expect ">"
 
 # ==========================================================
 # PHASE 3: Optional Configurations
-# Optional settings — remove the # Hash.
+# Shared secret for Central Manager registration.
 # ==========================================================
 
-###send "store system shared secret <Your Secrect Key>\r"  # e.g. send "store system shared secret guard\r"
-send "store system shared secret guard\r"
-expect ">"
+if { $SHARED_SECRET ne "" } {
+    puts "\[INFO\] Setting shared secret for Central Manager registration."
+    send "store system shared secret $SHARED_SECRET\r"
+    expect ">"
+}
 
-###send "register management ip-address 8443\r" #e.g. send "register management 10.0.100.2 8443\r"
-send "register management ip-address 8443\r"
-expect ">"
+if { $CENTRAL_MANAGER ne "" } {
+    puts "\[INFO\] Registering with Central Manager at $CENTRAL_MANAGER."
+    send "register management $CENTRAL_MANAGER 8443\r"
+    expect ">"
+}
 
 catch {
     expect {

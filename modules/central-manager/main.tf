@@ -16,6 +16,7 @@ resource "aws_instance" "central_manager" {
   key_name      = var.key_name
 
   associate_public_ip_address = var.assign_public_ip
+  user_data                   = var.user_data != null && var.user_data != "" ? var.user_data : null
 
   root_block_device {
     volume_size           = 1500
@@ -42,23 +43,61 @@ locals {
   gateway_ip  = cidrhost(local.subnet_cidr, 1)
 }
 
-# Wait for Guardium boot (20 min)
-resource "null_resource" "wait_for_guardium_ready" {
+# Step 1: Wait 10 minutes for initial instance boot
+resource "time_sleep" "wait_initial_boot" {
   depends_on = [aws_instance.central_manager]
+  count      = var.central_manager_count
 
-  provisioner "local-exec" {
-    command = <<EOT
-echo "[INFO] Waiting 20 minutes for Guardium Central Manager initialization..."
-sleep 1200
-EOT
+  create_duration = "10m"
+
+  triggers = {
+    instance_id = aws_instance.central_manager[count.index].id
   }
+}
+
+# Step 2: Stop instance (required for Central Manager to pass status checks)
+resource "aws_ec2_instance_state" "stop_cm" {
+  count       = var.central_manager_count
+  instance_id = aws_instance.central_manager[count.index].id
+  state       = "stopped"
+
+  depends_on = [time_sleep.wait_initial_boot]
+}
+
+# Step 3: Start instance back up
+resource "aws_ec2_instance_state" "start_cm" {
+  count       = var.central_manager_count
+  instance_id = aws_instance.central_manager[count.index].id
+  state       = "running"
+
+  depends_on = [aws_ec2_instance_state.stop_cm]
+}
+
+# Step 4: Wait 10 minutes after restart for status checks to pass
+resource "time_sleep" "wait_after_reboot" {
+  depends_on = [aws_ec2_instance_state.start_cm]
+  count      = var.central_manager_count
+
+  create_duration = "10m"
+
+  triggers = {
+    instance_id = aws_instance.central_manager[count.index].id
+  }
+}
+
+# Step 5: Verify instance status
+data "aws_instance" "cm_status_check" {
+  count       = var.central_manager_count
+  instance_id = aws_instance.central_manager[count.index].id
+
+  depends_on = [time_sleep.wait_after_reboot]
 }
 
 # =====================================================
 # Configure Guardium using Expect Automation
 # =====================================================
 resource "null_resource" "configure_guardium" {
-  depends_on = [null_resource.wait_for_guardium_ready]
+  depends_on = [data.aws_instance.cm_status_check]
 
   for_each = {
     for idx, instance in aws_instance.central_manager :
@@ -85,7 +124,10 @@ echo "[INFO] Connection target: ${each.value.public_dns}"
   "${var.resolver1}" \
   "${var.domain}" \
   "${var.resolver2}" \
-  "${var.timezone}"
+  "${var.timezone}" \
+  "${var.shared_secret}" \
+  "${var.license_base}" \
+  "${var.license_append}"
 
 echo "[INFO] Completed configuration for ${each.value.hostname}"
 echo "============================================================"

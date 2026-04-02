@@ -34,13 +34,35 @@ module "auto_vpc" {
 locals {
   final_vpc_id    = coalesce(var.vpc_id, try(module.auto_vpc[0].vpc_id, null))
   final_subnet_id = coalesce(var.subnet_id, try(module.auto_vpc[0].subnet_cm_id, null))
+  # Cloud-Init: resolve user_data_file path relative to this directory
+  user_data      = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
 }
 
 # =====================================================
-# 2️⃣ Create Security Group (or reuse existing)
+# 2️⃣ Lookup existing Guardium Central Manager SG
+# =====================================================
+data "aws_security_groups" "guardium_cm_existing" {
+  count = local.final_vpc_id != null ? 1 : 0
+
+  filter {
+    name   = "group-name"
+    values = ["guardium-cm-sg"]
+  }
+
+  filter {
+    name   = "vpc-id"
+    values = [local.final_vpc_id]
+  }
+}
+
+# =====================================================
+# 3️⃣ Create Security Group (only if none exists)
 # =====================================================
 resource "aws_security_group" "guardium_cm_sg" {
-  count = var.existing_guardium_cm_sg_id != "" ? 0 : 1
+  count = (
+    var.existing_guardium_cm_sg_id != "" ? 0 :
+    length(try(data.aws_security_groups.guardium_cm_existing[0].ids, [])) > 0 ? 0 : 1
+  )
 
   name        = "guardium-cm-sg"
   description = "Security group for Guardium Central Manager"
@@ -80,8 +102,33 @@ resource "aws_security_group" "guardium_cm_sg" {
   })
 }
 
+# When using an existing SG (found by name), ensure port 22 (SSH) exists for allowed_cidrs.
+locals {
+  cm_using_existing_sg = (
+    var.existing_guardium_cm_sg_id != "" ? true :
+    length(try(data.aws_security_groups.guardium_cm_existing[0].ids, [])) > 0
+  )
+  cm_existing_sg_id = (
+    var.existing_guardium_cm_sg_id != "" ? var.existing_guardium_cm_sg_id :
+    try(data.aws_security_groups.guardium_cm_existing[0].ids[0], null)
+  )
+}
+
+# Ensure SSH (port 22) is enabled for allowed_cidrs when using an existing SG
+resource "aws_security_group_rule" "guardium_cm_ssh_allowed_cidrs" {
+  for_each = local.cm_using_existing_sg && local.cm_existing_sg_id != null ? toset(var.allowed_cidrs) : toset([])
+
+  security_group_id = local.cm_existing_sg_id
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  description       = "SSH access (from allowed_cidrs)"
+}
+
 # =====================================================
-# 3️⃣ Deploy Guardium Central Manager module
+# 4️⃣ Deploy Guardium Central Manager module
 # =====================================================
 module "guardium_central_manager" {
   source = "../../modules/central-manager"
@@ -90,9 +137,10 @@ module "guardium_central_manager" {
   vpc_id                 = local.final_vpc_id
   subnet_id              = local.final_subnet_id
   vpc_security_group_ids = (
-    var.existing_guardium_cm_sg_id != "" ?
-    [var.existing_guardium_cm_sg_id] :
-    [aws_security_group.guardium_cm_sg[0].id]
+    var.existing_guardium_cm_sg_id != "" ? [var.existing_guardium_cm_sg_id] :
+    length(try(data.aws_security_groups.guardium_cm_existing[0].ids, [])) > 0
+    ? data.aws_security_groups.guardium_cm_existing[0].ids
+    : [aws_security_group.guardium_cm_sg[0].id]
   )
 
   key_name      = var.key_name
@@ -106,12 +154,16 @@ module "guardium_central_manager" {
   resolver2        = var.resolver2
   domain           = var.domain
   timezone         = var.timezone
+  shared_secret    = var.shared_secret
+  license_base     = var.license_base
+  license_append   = var.license_append
+  user_data        = local.user_data
   tags             = var.tags
   assign_public_ip = var.assign_public_ip
 }
 
 # =====================================================
-# 4️⃣ Outputs (Extended - Safe and Multi-Instance Compatible)
+# 5️⃣ Outputs (Extended - Safe and Multi-Instance Compatible)
 # =====================================================
 
 output "final_vpc_id" {
@@ -127,9 +179,10 @@ output "final_subnet_id" {
 output "security_group_in_use" {
   description = "The security group ID in use for Guardium CM"
   value = (
-    var.existing_guardium_cm_sg_id != "" ?
-    var.existing_guardium_cm_sg_id :
-    aws_security_group.guardium_cm_sg[0].id
+    var.existing_guardium_cm_sg_id != "" ? var.existing_guardium_cm_sg_id :
+    length(try(data.aws_security_groups.guardium_cm_existing[0].ids, [])) > 0
+    ? data.aws_security_groups.guardium_cm_existing[0].ids[0]
+    : aws_security_group.guardium_cm_sg[0].id
   )
 }
 
@@ -175,4 +228,3 @@ output "guardium_cm_timezone" {
   description = "Timezone configuration"
   value       = var.timezone
 }
-

@@ -72,6 +72,18 @@ variable "timezone" {
   type        = string
 }
 
+variable "shared_secret" {
+  description = "Shared secret for registering this Aggregator with the Central Manager"
+  type        = string
+  default     = ""
+}
+
+variable "central_manager_ip" {
+  description = "IP address of the Central Manager to register with"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Common tags to apply to resources"
   type        = map(string)
