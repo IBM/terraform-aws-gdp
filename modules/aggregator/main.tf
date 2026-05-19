@@ -50,16 +50,37 @@ locals {
 }
 
 # =====================================================
-# Wait for Guardium boot (~20 min)
+# Wait for instance to stabilize
 # =====================================================
-resource "null_resource" "wait_for_guardium_ready" {
+resource "time_sleep" "wait_for_instance_ready" {
   depends_on = [aws_instance.aggregator]
+  count      = var.aggregator_count
 
-  provisioner "local-exec" {
-    command = <<EOT
-echo "[INFO] Waiting 20 minutes for Guardium Aggregator initialization..."
-sleep 1200
-EOT
+  create_duration = "5m"
+
+  triggers = {
+    instance_id = aws_instance.aggregator[count.index].id
+  }
+}
+
+# Monitor instance status
+data "aws_instance" "aggregator_status" {
+  count       = var.aggregator_count
+  instance_id = aws_instance.aggregator[count.index].id
+
+  depends_on = [time_sleep.wait_for_instance_ready]
+}
+
+# Wait for Guardium initialization
+resource "time_sleep" "wait_for_guardium_init" {
+  depends_on = [data.aws_instance.aggregator_status]
+  count      = var.aggregator_count
+
+  create_duration = "15m"
+
+  triggers = {
+    instance_id    = aws_instance.aggregator[count.index].id
+    instance_state = data.aws_instance.aggregator_status[count.index].instance_state
   }
 }
 
@@ -67,7 +88,7 @@ EOT
 # Configure Guardium via Expect
 # =====================================================
 resource "null_resource" "configure_guardium" {
-  depends_on = [null_resource.wait_for_guardium_ready]
+  depends_on = [time_sleep.wait_for_guardium_init]
 
   for_each = {
     for idx, instance in aws_instance.aggregator :
@@ -96,7 +117,9 @@ echo "[INFO] Connection target: ${each.value.public_dns}"
   ${var.resolver1} \
   ${var.domain} \
   ${var.resolver2} \
-  ${var.timezone}
+  ${var.timezone} \
+  ${var.shared_secret} \
+  ${var.central_manager_ip}
 echo "[INFO] Completed configuration for ${each.value.hostname}"
 echo "============================================================"
 EOT

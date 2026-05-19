@@ -72,6 +72,18 @@ variable "timezone" {
   type        = string
 }
 
+variable "shared_secret" {
+  description = "Shared secret for registering this Collector with the Central Manager"
+  type        = string
+  default     = ""
+}
+
+variable "central_manager_ip" {
+  description = "IP address of the Central Manager to register with"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Common tags to apply to resources"
   type        = map(string)
@@ -81,5 +93,28 @@ variable "tags" {
 variable "assign_public_ip" {
   description = "If true, instance receives a public IP. Set to false for private-only deployments."
   type        = bool
+}
+
+variable "user_data" {
+  description = "Cloud-Init user data (e.g. #cloud-config YAML). Optional; leave null to omit."
+  type        = string
+  default     = null
+}
+
+variable "license_base" {
+  description = "GDP Base license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+variable "license_append" {
+  description = "GDP Append Trial license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile name or ARN to attach to the collector instance for AWS service access"
+  type        = string
+  default     = null
 }
 

@@ -81,6 +81,48 @@ variable "timezone" {
   type        = string
 }
 
+# =====================================================
+# Shared Secret (for Central Manager registration)
+# =====================================================
+
+variable "shared_secret" {
+  description = "Shared secret used to register this Collector with the Central Manager. Must match the Central Manager's shared secret."
+  type        = string
+  default     = ""
+}
+
+variable "central_manager_ip" {
+  description = "IP address of the Central Manager to register with."
+  type        = string
+  default     = ""
+}
+
+# =====================================================
+# Cloud-Init User Data (optional)
+# =====================================================
+
+variable "user_data_file" {
+  description = "Path to Cloud-Init user-data file (e.g. #cloud-config YAML). Relative to examples/collector. Leave empty to omit."
+  type        = string
+  default     = ""
+}
+
+# =====================================================
+# GDP License Keys (optional)
+# =====================================================
+
+variable "license_base" {
+  description = "GDP Base license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
+variable "license_append" {
+  description = "GDP Append Trial license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
 variable "allowed_cidrs" {
   description = "Base allowed CIDR ranges (same as terraform.tfvars)"
   type        = list(string)
