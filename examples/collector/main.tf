@@ -69,7 +69,7 @@ resource "aws_security_group" "guardium_col_sg" {
   description = "Security group for Guardium Collector"
   vpc_id      = local.final_vpc_id
 
-   dynamic "ingress" {
+  dynamic "ingress" {
     for_each = [
       { from = 22,   to = 22,   desc = "SSH access" },
       { from = 8443, to = 8443, desc = "Guardium Web Console" },
@@ -144,9 +144,12 @@ module "guardium_collector" {
   key_name      = var.key_name
   pem_file_path = var.pem_file_path
 
+  iam_instance_profile = var.iam_instance_profile
+
   collector_count         = var.collector_count
   collector_ami_id        = var.collector_ami_id
   collector_instance_type = var.collector_instance_type
+  ami_type                = var.ami_type
 
   resolver1           = var.resolver1
   resolver2           = var.resolver2
@@ -159,6 +162,12 @@ module "guardium_collector" {
   user_data           = local.user_data
   tags                = var.tags
   assign_public_ip    = var.assign_public_ip
+
+  # Instance naming and root volume configuration
+  instance_name_prefix              = var.instance_name_prefix
+  root_volume_size                  = var.root_volume_size
+  root_volume_type                  = var.root_volume_type
+  root_volume_delete_on_termination = var.root_volume_delete_on_termination
 }
 
 # =====================================================

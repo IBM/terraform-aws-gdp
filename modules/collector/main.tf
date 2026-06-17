@@ -3,13 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-##############################################
 # IBM Guardium GDP - Collector Module
-##############################################
 
-# =====================================================
-# EC2 Instance
-# =====================================================
 resource "aws_instance" "collector" {
   count         = var.collector_count
   ami           = var.collector_ami_id
@@ -21,78 +16,91 @@ resource "aws_instance" "collector" {
   # IAM instance profile for AWS service access (e.g., CloudWatch, S3, SQS)
   iam_instance_profile = var.iam_instance_profile
 
-  # Allow public IP only if explicitly configured
   associate_public_ip_address = var.assign_public_ip
-  user_data                   = var.user_data != null && var.user_data != "" ? var.user_data : null
+  user_data                   = local.final_user_data
 
   root_block_device {
-    volume_size           = 550
-    volume_type           = "gp3"
-    delete_on_termination = true
+    volume_size           = var.root_volume_size
+    volume_type           = var.root_volume_type
+    delete_on_termination = var.root_volume_delete_on_termination
   }
 
   tags = merge(
     var.tags,
     {
-      Name = format("guard-col-%02d", count.index + 1)
+      Name = format("%s-%02d", var.instance_name_prefix, count.index + 1)
       Role = "Collector"
     }
   )
 }
 
-# =====================================================
-# Subnet and Network Info
-# =====================================================
 data "aws_subnet" "selected" {
   id = var.subnet_id
 }
 
 locals {
-  subnet_cidr = data.aws_subnet.selected.cidr_block
-  subnet_mask = cidrnetmask(local.subnet_cidr)
-  gateway_ip  = cidrhost(local.subnet_cidr, 1)
+  # Network configuration from subnet
+  subnet_cidr   = data.aws_subnet.selected.cidr_block
+  subnet_prefix = split("/", local.subnet_cidr)[1]
+  subnet_mask   = cidrnetmask(local.subnet_cidr)
+  gateway_ip    = cidrhost(local.subnet_cidr, 1)
+
+  # User data processing for unified AMI
+  user_data_clean = var.user_data != null && var.user_data != "" ? replace(var.user_data, "/^#cloud-config\\s*/", "") : "{}"
+  user_config     = try(yamldecode(local.user_data_clean), {})
+  user_guardium   = try(local.user_config.ibm.guardium, {})
+
+  # System-enforced Guardium config (collector only needs license_accepted)
+  system_guardium = {
+    license_accepted = true
+  }
+
+  # Merge user and system configs (system takes precedence)
+  merged_guardium = merge(local.user_guardium, local.system_guardium)
+  merged_config = merge(
+    local.user_config,
+    {
+      ibm = merge(
+        try(local.user_config.ibm, {}),
+        { guardium = local.merged_guardium }
+      )
+    }
+  )
+
+  # Final user_data: merged for unified AMI, pass-through for legacy
+  unified_user_data = "#cloud-config\n${yamlencode(local.merged_config)}"
+  final_user_data   = lower(var.ami_type) == "unified" ? local.unified_user_data : (
+    var.user_data != null && var.user_data != "" ? var.user_data : null
+  )
 }
 
-# =====================================================
-# Wait for instance to stabilize
-# =====================================================
-resource "time_sleep" "wait_for_instance_ready" {
+# Wait for Guardium CLI readiness after boot
+resource "null_resource" "wait_for_guardium_ready" {
   depends_on = [aws_instance.collector]
   count      = var.collector_count
 
-  create_duration = "5m"
+  provisioner "local-exec" {
+    command = "${path.module}/../common/scripts/wait_for_guardium_ready.sh"
+
+    environment = {
+      GUARDIUM_INSTANCE_NAME       = aws_instance.collector[count.index].tags["Name"]
+      GUARDIUM_INSTANCE_PUBLIC_IP  = aws_instance.collector[count.index].public_ip
+      GUARDIUM_INSTANCE_PRIVATE_IP = aws_instance.collector[count.index].private_ip
+      GUARDIUM_PEM_FILE            = var.pem_file_path
+      GUARDIUM_MAX_WAIT            = var.guardium_ready_max_wait
+      GUARDIUM_POLL_INTERVAL       = var.guardium_ready_poll_interval
+      GUARDIUM_LOG_FILE            = var.guardium_ready_log_file
+    }
+  }
 
   triggers = {
     instance_id = aws_instance.collector[count.index].id
   }
 }
 
-# Monitor instance status
-data "aws_instance" "collector_status" {
-  count       = var.collector_count
-  instance_id = aws_instance.collector[count.index].id
-
-  depends_on = [time_sleep.wait_for_instance_ready]
-}
-
-# Wait for Guardium initialization
-resource "time_sleep" "wait_for_guardium_init" {
-  depends_on = [data.aws_instance.collector_status]
-  count      = var.collector_count
-
-  create_duration = "15m"
-
-  triggers = {
-    instance_id    = aws_instance.collector[count.index].id
-    instance_state = data.aws_instance.collector_status[count.index].instance_state
-  }
-}
-
-# =====================================================
-# Configure Guardium via Expect
-# =====================================================
+# Configure Guardium via Expect automation
 resource "null_resource" "configure_guardium" {
-  depends_on = [time_sleep.wait_for_guardium_init]
+  depends_on = [null_resource.wait_for_guardium_ready]
 
   for_each = {
     for idx, instance in aws_instance.collector :
@@ -100,8 +108,7 @@ resource "null_resource" "configure_guardium" {
       hostname   = instance.tags["Name"]
       private_ip = instance.private_ip
 
-      #  Auto-fallback logic:
-      # If instance has no public DNS or IP, fallback to private IP automatically.
+      # Use private IP if no public DNS/IP
       public_dns = coalesce(instance.public_dns, instance.public_ip, instance.private_ip)
     }
   }
@@ -116,7 +123,7 @@ echo "[INFO] Connection target: ${each.value.public_dns}"
   "${each.value.private_ip}" \
   "${each.value.public_dns}" \
   "${var.pem_file_path}" \
-  "${local.subnet_mask}" \
+  "${local.subnet_prefix}" \
   "${local.gateway_ip}" \
   "${var.resolver1}" \
   "${var.domain}" \
@@ -132,9 +139,6 @@ EOT
   }
 }
 
-# =====================================================
-# Outputs
-# =====================================================
 output "collector_public_ips" {
   description = "Public IPs of Guardium Collector instances (if any)"
   value       = [for i in aws_instance.collector : try(i.public_ip, null)]

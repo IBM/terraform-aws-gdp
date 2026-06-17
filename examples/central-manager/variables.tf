@@ -48,6 +48,12 @@ variable "pem_file_path" {
   type        = string
 }
 
+variable "ami_type" {
+  description = "AMI type: 'legacy' for unit-type-specific AMIs, 'unified' for multi-unit-type AMI. When using unified AMI, the system automatically configures the correct unit type."
+  type        = string
+  default     = "legacy"
+}
+
 variable "central_manager_ami_id" {
   description = "AMI ID of the Guardium Central Manager image."
   type        = string
@@ -78,6 +84,12 @@ variable "user_data_file" {
   description = "Path to a Cloud-Init user-data file (e.g. #cloud-config YAML). Relative to this directory. Leave empty to omit."
   type        = string
   default     = ""
+}
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile name or ARN to attach to the central manager instance for AWS service access"
+  type        = string
+  default     = null
 }
 
 # =====================================================
@@ -181,5 +193,37 @@ variable "existing_guardium_collector_sg_id" {
   description = "Existing Guardium Collector Security Group ID (optional, reserved for future cross-linking)."
   type        = string
   default     = ""
+}
+
+# =====================================================
+# Instance Naming Configuration
+# =====================================================
+
+variable "instance_name_prefix" {
+  description = "Prefix for instance name tag (e.g., 'guard-cm'). The instance number will be appended."
+  type        = string
+  default     = "guard-cm"
+}
+
+# =====================================================
+# Root Volume Configuration
+# =====================================================
+
+variable "root_volume_size" {
+  description = "Size of the root EBS volume in GB"
+  type        = number
+  default     = 1500
+}
+
+variable "root_volume_type" {
+  description = "Type of the root EBS volume (e.g., gp3, gp2, io1, io2)"
+  type        = string
+  default     = "gp3"
+}
+
+variable "root_volume_delete_on_termination" {
+  description = "Whether to delete the root volume when the instance is terminated."
+  type        = bool
+  default     = true
 }
 
