@@ -81,7 +81,7 @@ resource "null_resource" "wait_for_guardium_ready" {
   count      = var.aggregator_count
 
   provisioner "local-exec" {
-    command = "${path.module}/scripts/wait_for_guardium_ready.sh"
+    command = "${path.module}/../../scripts/wait_for_guardium_ready.sh"
 
     environment = {
       GUARDIUM_INSTANCE_NAME       = aws_instance.aggregator[count.index].tags["Name"]

@@ -81,7 +81,7 @@ resource "null_resource" "wait_for_guardium_ready" {
   count      = var.central_manager_count
 
   provisioner "local-exec" {
-    command = "${path.module}/scripts/wait_for_guardium_ready.sh"
+    command = "${path.module}/../../scripts/wait_for_guardium_ready.sh"
 
     environment = {
       GUARDIUM_INSTANCE_NAME       = aws_instance.central_manager[count.index].tags["Name"]
