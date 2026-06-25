@@ -31,6 +31,33 @@ The parameters are documented in the file. For additional information about the 
 
 After you have verified the parameters, save the file and exit the editor.
 
+#### Unified AMI Support
+
+This example supports both **legacy** and **unified** AMI types:
+
+**Legacy AMI (Default):**
+```hcl
+ami_type = "legacy"  # or omit this line
+collector_ami_id = "ami-legacy-collector-12345"
+```
+
+**Unified AMI (Recommended):**
+```hcl
+ami_type = "unified"
+collector_ami_id = "ami-unified-67890"
+```
+
+When using a unified AMI, the system automatically injects `license_accepted: true` via cloud-init. The unified AMI defaults to collector mode, so no additional configuration is needed.
+
+**Unified AMI with Custom Cloud-Init:**
+```hcl
+ami_type = "unified"
+collector_ami_id = "ami-unified-67890"
+user_data_file = "./custom-config.yaml"
+```
+
+Your custom cloud-init configuration will be safely merged with the system configuration. See the main [README](../../README.md#unified-ami-support) for more details.
+
 ### 1.2 Prepare the connection to Central Manager
 
 In AWS, locate the IP address of the Central Manager you want this Collector to be registered to.

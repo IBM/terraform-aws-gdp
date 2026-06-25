@@ -14,22 +14,22 @@
 output "private_ip" {
   description = "Private IP address(es) of the Guardium Collector instance(s)"
   value = [
-    for i in aws_instance.collector : i.private_ip
+    for col in aws_instance.collector : try(col.private_ip, null)
   ]
 }
 
 output "public_ip" {
   description = "Public IP address(es) of the Guardium Collector instance(s)"
   value = [
-    for i in aws_instance.collector : try(i.public_ip, null)
+    for col in aws_instance.collector : try(col.public_ip, null)
   ]
 }
 
 output "instance_ip" {
   description = "Primary IP for each instance (public if available, otherwise private)"
   value = [
-    for i in aws_instance.collector :
-    coalesce(try(i.public_ip, null), i.private_ip)
+    for col in aws_instance.collector :
+    coalesce(try(col.public_ip, null), col.private_ip)
   ]
 }
 
