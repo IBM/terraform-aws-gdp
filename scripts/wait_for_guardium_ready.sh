@@ -5,13 +5,11 @@
 #
 # wait_for_guardium_ready.sh
 #
-# ⚠️  IMPORTANT: SYNCHRONIZED FILE
-# This file is duplicated across multiple modules for self-contained module usage:
-#   - modules/collector/scripts/wait_for_guardium_ready.sh
-#   - modules/central-manager/scripts/wait_for_guardium_ready.sh
-#   - modules/aggregator/scripts/wait_for_guardium_ready.sh
-#
-# When updating this file, ensure ALL copies are synchronized.
+# This script is shared across the following modules via relative path
+# (${path.module}/../../scripts/wait_for_guardium_ready.sh):
+#   - modules/central-manager
+#   - modules/aggregator
+#   - modules/collector
 #
 # ⚠️  POSIX COMPLIANCE REQUIREMENT
 # This script MUST remain POSIX Shell Command Language compliant (POSIX.1-2017)
