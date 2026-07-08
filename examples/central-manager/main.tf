@@ -146,9 +146,12 @@ module "guardium_central_manager" {
   key_name      = var.key_name
   pem_file_path = var.pem_file_path
 
+  iam_instance_profile = var.iam_instance_profile
+
   central_manager_count         = var.central_manager_count
   central_manager_ami_id        = var.central_manager_ami_id
   central_manager_instance_type = var.central_manager_instance_type
+  ami_type                      = var.ami_type
 
   resolver1        = var.resolver1
   resolver2        = var.resolver2
@@ -160,6 +163,12 @@ module "guardium_central_manager" {
   user_data        = local.user_data
   tags             = var.tags
   assign_public_ip = var.assign_public_ip
+
+  # Instance naming and root volume configuration
+  instance_name_prefix              = var.instance_name_prefix
+  root_volume_size                  = var.root_volume_size
+  root_volume_type                  = var.root_volume_type
+  root_volume_delete_on_termination = var.root_volume_delete_on_termination
 }
 
 # =====================================================

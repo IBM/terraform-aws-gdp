@@ -27,6 +27,10 @@ subnet_id = "subnet-0c82066180e40df72"
 # Guardium Central Manager Deployment
 # =====================================================
 
+# AMI type: 'legacy' - for unit-type-specific AMIs or 'unified' - for multi-unit-type AMIs
+# When using unified AMI, the system automatically configures the unit type.
+ami_type = "legacy"
+
 # AMI image to be used for the GDP machine.
 central_manager_ami_id = "ami-0955ca4c9f731cc20"
 
@@ -70,8 +74,11 @@ assign_public_ip = false
 # Cloud-Init (optional)
 # =====================================================
 
-# Path to Cloud-Init user-data file (e.g. #cloud-config). Relative to examples/central-manager.
-# Leave empty to omit. Cloud-Init runs at first boot; Terraform then waits and runs configure.
+# Path to Cloud-Init user-data file (e.g., #cloud-config). Relative to examples/central-manager.
+# Leave empty to omit. Cloud-Init runs at first boot; Terraform then waits and runs configuration.
+#
+# For unified AMIs: The module automatically injects 'aggregator: true' and 'license_accepted: true'.
+# Your custom config is safely merged without overriding critical fields.
 user_data_file = "./user-data.yaml"
 
 # =====================================================
@@ -112,3 +119,27 @@ tags = {
   Owner       = "customer@example.com"
   Role        = "CentralManager"
 }
+
+# =====================================================
+# Instance Naming and Storage (optional)
+# =====================================================
+
+# Prefix for instance name tag. Instance number will be appended (e.g., guard-cm-01)
+# instance_name_prefix = "guard-cm"
+
+# Size of the root EBS volume in GB (minimum 1500 GB for Central Manager)
+# root_volume_size = 1500
+
+# Type of the root EBS volume (gp2, gp3, io1, io2)
+# root_volume_type = "gp3"
+
+# Whether to delete the root volume when the instance is terminated
+# root_volume_delete_on_termination = true
+
+# =====================================================
+# Existing Security Groups (optional)
+# =====================================================
+# Leave empty to auto-create a new SG or detect existing "guardium-cm-sg"
+existing_guardium_cm_sg_id         = ""
+existing_guardium_aggregator_sg_id = ""
+existing_guardium_collector_sg_id  = ""
