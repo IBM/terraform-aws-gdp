@@ -1,15 +1,16 @@
-# Automated installation of GDP appliances on AWS
+# Automated Installation of IBM Guardium Data Protection on AWS
 
-## Scope
+## Overview
 
-The modules contained here automate installation of GDP appliances onto AWS.
+Terraform modules for automated deployment of IBM Guardium Data Protection (GDP) appliances on AWS with intelligent readiness detection, unified AMI support, and automated configuration.
 
-The following are supported:
+## Supported Components
 
-* Central Manager
-* Aggregator
-* Collector
-* Edge Gateway
+* **Central Manager**
+* **Aggregator**
+* **Collector**
+* **Edge Gateway**
+
 
 For background and detailed technical information, see the [project info document](docs/project_info.md).
 
@@ -213,18 +214,18 @@ module "edge" {
   # AWS EKS cluster name
   aws_region                             = "us-east-1"
   aws_profile                            = "my-aws-profile"
-            
+
   vpc_cidr                               = "10.0.0.0/16"
   private_subnet_cidrs                   = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
   public_subnet_cidrs                    = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-            
+
   node_group_name                        = "ng-edge"
   node_instance_type                     = "m5.4xlarge"
   node_group_min_size                    = 1
   node_group_max_size                    = 4
   node_group_desired_size                = 2
   node_volume_size                       = 500
-            
+
   create_efs                             = true
   ebs_csi_driver_version                 = null
 
@@ -242,7 +243,7 @@ module "edge" {
                                               Project     = "edge-gateway"
                                               Owner       = "your-name"
                                            }
-               
+
 
   # Edge Gateway Configuration
   edge_name                              = "my-edge"
@@ -258,6 +259,145 @@ module "edge" {
 
 }
 ```
+
+## Key Features
+
+### Unified AMI Support
+
+**Unified AMIs** - A single AMI image that can be configured as a Collector, Aggregator, or Central Manager through cloud-init configuration.
+
+**Legacy AMIs (Default)**:
+- Separate AMIs for each unit type (collector, aggregator, central-manager)
+- No automatic cloud-init injection
+- Set `ami_type = "legacy"` or omit (default)
+- Maintains backward compatibility with existing deployments
+
+**Unified AMI (Recommended for New Deployments)**:
+- Single AMI for all unit types
+- Automatic unit type configuration via cloud-init
+- Set `ami_type = "unified"`
+- Simplified AMI management
+
+### Intelligent Readiness Detection
+
+The modules include sophisticated polling mechanisms that:
+- **Detect when Guardium CLI becomes operational** - No more blind waits
+- **Provide detailed progress logging** - Real-time visibility into deployment status
+- **Handle both public and private IP connectivity** - Works in any network configuration
+- **Configurable timeout and polling intervals** - Tune for your environment
+- **Significantly reduce deployment time** - Only wait as long as necessary
+
+This feature eliminates the guesswork from deployments and provides clear feedback on system readiness.
+
+### Automated Configuration
+
+- **Expect-based CLI automation** for initial Guardium setup
+- **Automatic Central Manager registration** for Aggregators and Collectors
+- **License installation support** for automated deployments
+- **Cloud-Init integration** with safe merging for custom configurations
+
+### How It Works
+
+When using a unified AMI:
+
+1. **Collector**: System injects `license_accepted: true` (unified AMI defaults to collector)
+2. **Aggregator**: System injects `aggregator: true` and `license_accepted: true`
+3. **Central Manager**: System injects `aggregator: true` and `license_accepted: true` (CM is a special aggregator)
+
+### Cloud-Init Merging
+
+When using unified AMI with custom cloud-init:
+- System-critical fields (`aggregator: true`, `license_accepted: true`) are **protected**
+- User configuration is **safely merged** for non-conflicting fields
+- Merging happens in Terraform before passing to cloud-init
+- System configuration **always takes precedence** for conflicts
+- User additions (new parameters) are **preserved**
+
+### Usage Examples
+
+#### Legacy AMI (Current Behavior)
+
+```hcl
+module "aggregator" {
+  source = "./modules/aggregator"
+
+  # ami_type defaults to "legacy"
+  aggregator_ami_id        = "ami-legacy-aggregator-12345"
+  aggregator_instance_type = "m6i.2xlarge"
+
+  # ... other parameters
+}
+```
+
+#### Unified AMI (Simple)
+
+```hcl
+module "aggregator" {
+  source = "./modules/aggregator"
+
+  ami_type                 = "unified"
+  aggregator_ami_id        = "ami-unified-67890"
+  aggregator_instance_type = "m6i.2xlarge"
+
+  # System automatically injects aggregator: true
+  # ... other parameters
+}
+```
+
+#### Unified AMI with Custom Cloud-Init
+
+```hcl
+module "aggregator" {
+  source = "./modules/aggregator"
+
+  ami_type                 = "unified"
+  aggregator_ami_id        = "ami-unified-67890"
+  aggregator_instance_type = "m6i.2xlarge"
+  user_data_file           = "./custom-config.yaml"
+
+  # System merges: aggregator: true + your custom config
+  # ... other parameters
+}
+```
+
+**custom-config.yaml:**
+```yaml
+#cloud-config
+ibm:
+  guardium:
+    new_parameter: true
+```
+
+**Result:** Terraform merges the configurations before passing to cloud-init. System injects `aggregator: true` and `license_accepted: true`, while your custom `new_parameter` is preserved.
+
+### Configurable Storage and Naming
+
+- **Customizable root volume size** - Adjust storage to your needs
+- **Multiple volume types supported** - gp2, gp3, io1, io2
+- **Configurable instance naming** - Custom prefixes for better organization
+- **Volume retention control** - Choose whether to delete volumes on termination
+
+### Migration Guide
+
+**For Existing Deployments:**
+- No changes required
+- `ami_type` defaults to `"legacy"`
+- All existing configurations continue to work
+
+**For New Deployments:**
+- Use `ami_type = "unified"` with unified AMI
+- Optionally provide custom cloud-init via `user_data_file`
+- System handles unit type configuration automatically
+
+### Cloud-Init Merging Behavior
+
+When using unified AMI with custom cloud-init:
+- System-critical fields (`aggregator: true`, `license_accepted: true`) are **protected**
+- User configuration is **safely merged** for non-conflicting fields
+- Merging happens in Terraform before passing to cloud-init
+- System configuration **always takes precedence** for conflicts
+- User additions (new parameters) are **preserved**
+- Final merged YAML is passed as a single `#cloud-config` to the instance
 
 ## Contributing
 

@@ -37,6 +37,17 @@ variable "pem_file_path" {
   type        = string
 }
 
+variable "ami_type" {
+  description = "AMI type: 'legacy' for unit-type-specific AMIs, 'unified' for multi-unit-type AMIs. When using unified AMI, the system automatically configures the correct unit type."
+  type        = string
+  default     = "legacy"
+
+  validation {
+    condition     = contains(["legacy", "unified"], var.ami_type)
+    error_message = "ami_type must be 'legacy' or 'unified'."
+  }
+}
+
 variable "central_manager_ami_id" {
   description = "AMI ID for Guardium Central Manager"
   type        = string
@@ -54,11 +65,12 @@ variable "central_manager_count" {
 }
 
 variable "resolver1" {
-  description = "DNS resolver for Guardium CM configuration"
+  description = "Primary DNS resolver for Guardium Central Manager configuration"
   type        = string
 }
+
 variable "resolver2" {
-  description = "DNS resolver for Guardium CM configuration"
+  description = "Secondary DNS resolver for Guardium Central Manager configuration"
   type        = string
 }
 variable "domain" {
@@ -106,3 +118,82 @@ variable "user_data" {
   default     = null
 }
 
+variable "iam_instance_profile" {
+  description = "IAM instance profile name or ARN to attach to the central manager instance for AWS service access"
+  type        = string
+  default     = null
+}
+
+###########################################
+# Guardium Readiness Polling Configuration
+###########################################
+
+variable "guardium_ready_max_wait" {
+  description = "Maximum time in seconds to wait for Guardium CLI to become ready (default: 1200 = 20 minutes)"
+  type        = number
+  default     = 1200
+
+  validation {
+    condition     = var.guardium_ready_max_wait >= 60
+    error_message = "guardium_ready_max_wait must be at least 60 seconds"
+  }
+}
+
+variable "guardium_ready_poll_interval" {
+  description = "Interval in seconds between Guardium CLI readiness checks (default: 30)"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.guardium_ready_poll_interval >= 10 && var.guardium_ready_poll_interval <= 300
+    error_message = "guardium_ready_poll_interval must be between 10 and 300 seconds"
+  }
+}
+
+variable "guardium_ready_log_file" {
+  description = "Path to log file for Guardium readiness polling. If empty, logs to stdout only."
+  type        = string
+  default     = ""
+}
+
+###########################################
+# Instance Naming Configuration
+###########################################
+
+variable "instance_name_prefix" {
+  description = "Prefix for instance name tag (e.g., 'guard-cm'). The instance number will be appended."
+  type        = string
+  default     = "guard-cm"
+}
+
+###########################################
+# Root Volume Configuration
+###########################################
+
+variable "root_volume_size" {
+  description = "Size of the root EBS volume in GB"
+  type        = number
+  default     = 1500
+
+  validation {
+    condition     = var.root_volume_size >= 1500
+    error_message = "root_volume_size must be at least 1500 GB for Guardium Central Manager."
+  }
+}
+
+variable "root_volume_type" {
+  description = "Type of the root EBS volume (e.g., gp3, gp2, io1, io2)"
+  type        = string
+  default     = "gp3"
+
+  validation {
+    condition     = contains(["gp2", "gp3", "io1", "io2"], var.root_volume_type)
+    error_message = "root_volume_type must be one of: gp2, gp3, io1, io2"
+  }
+}
+
+variable "root_volume_delete_on_termination" {
+  description = "Whether to delete the root volume when the instance is terminated."
+  type        = bool
+  default     = true
+}

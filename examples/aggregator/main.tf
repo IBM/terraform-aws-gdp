@@ -34,6 +34,8 @@ module "auto_vpc" {
 locals {
   final_vpc_id    = coalesce(var.vpc_id, try(module.auto_vpc[0].vpc_id, null))
   final_subnet_id = coalesce(var.subnet_id, try(module.auto_vpc[0].subnet_agg_id, null))
+  # Cloud-Init: resolve user_data_file path relative to this directory
+  user_data       = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
 }
 
 # =====================================================
@@ -68,7 +70,7 @@ resource "aws_security_group" "guardium_agg_sg" {
 
   dynamic "ingress" {
     for_each = [
-{ from = 22,   to = 22,   desc = "SSH access" },
+      { from = 22,   to = 22,   desc = "SSH access" },
       { from = 8443, to = 8443, desc = "Guardium Web Console" },
       { from = 3306, to = 3306, desc = "Database communications" },
       { from = 8447, to = 8447, desc = "Guardium patch/upgrade" },
@@ -144,18 +146,30 @@ module "guardium_aggregator" {
   key_name      = var.key_name
   pem_file_path = var.pem_file_path
 
+  iam_instance_profile = var.iam_instance_profile
+
   aggregator_count         = var.aggregator_count
   aggregator_ami_id        = var.aggregator_ami_id
   aggregator_instance_type = var.aggregator_instance_type
+  ami_type                 = var.ami_type
 
-  resolver1        = var.resolver1
-  resolver2        = var.resolver2
-  domain           = var.domain
-  timezone         = var.timezone
+  resolver1           = var.resolver1
+  resolver2           = var.resolver2
+  domain              = var.domain
+  timezone            = var.timezone
   shared_secret       = var.shared_secret
   central_manager_ip  = var.central_manager_ip
+  license_base        = var.license_base
+  license_append      = var.license_append
+  user_data           = local.user_data
   tags                = var.tags
   assign_public_ip    = var.assign_public_ip
+
+  # Instance naming and root volume configuration
+  instance_name_prefix              = var.instance_name_prefix
+  root_volume_size                  = var.root_volume_size
+  root_volume_type                  = var.root_volume_type
+  root_volume_delete_on_termination = var.root_volume_delete_on_termination
 }
 
 # =====================================================

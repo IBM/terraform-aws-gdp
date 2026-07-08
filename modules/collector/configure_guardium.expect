@@ -5,24 +5,36 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-# ==========================================================
-# IBM Guardium GDP – Collector  Auto Configuration
-# ==========================================================
+# IBM Guardium GDP – Collector Auto Configuration
 
 set timeout 300
 
-# ---- Strict argument validation ----
+# Prompt pattern: requires chars before/after dot/dash to avoid false matches like "Setup -> License"
+set prompt_pattern {[a-zA-Z0-9._-]+[.-][a-zA-Z0-9._-]+>\s*}
+
+proc wait_for_prompt {} {
+    global prompt_pattern
+    expect {
+        -re $prompt_pattern { return 0 }
+        timeout {
+            puts "\[WARN\] Timeout waiting for CLI prompt."
+            return 1
+        }
+    }
+}
+
+# Argument validation
 if {$argc != 14} {
     puts "\[ERROR\] Expected 14 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
-# ---- Arguments (Terraform Order) ----
+# Arguments from Terraform
 set HOSTNAME          [lindex $argv 0]
 set PRIVATE_IP        [lindex $argv 1]
 set PUBLIC_DNS        [lindex $argv 2]
 set PEM_FILE          [lindex $argv 3]
-set SUBNET_MASK       [lindex $argv 4]
+set SUBNET_PREFIX     [lindex $argv 4]
 set GATEWAY           [lindex $argv 5]
 set RESOLVER1         [lindex $argv 6]
 set DOMAIN            [lindex $argv 7]
@@ -33,9 +45,7 @@ set CENTRAL_MANAGER   [lindex $argv 11]
 set LICENSE_BASE      [lindex $argv 12]
 set LICENSE_APPEND    [lindex $argv 13]
 
-# ==========================================================
-# Determine target IP (prefer public if exists)
-# ==========================================================
+# Determine connection target (prefer public IP)
 if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
     set TARGET $PRIVATE_IP
     set CONNECT_MODE "private"
@@ -44,9 +54,7 @@ if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
     set CONNECT_MODE "public"
 }
 
-# ==========================================================
 # Logging setup
-# ==========================================================
 file mkdir "./logs"
 set LOGFILE "./logs/configure_guardium_[exec date +%Y%m%d_%H%M%S]_on_${HOSTNAME}.log"
 log_file -a $LOGFILE
@@ -56,7 +64,7 @@ puts "Host: $HOSTNAME"
 puts "Private IP: $PRIVATE_IP"
 puts "Public DNS: $PUBLIC_DNS"
 puts "Using $CONNECT_MODE connection: $TARGET"
-puts "Subnet Mask: $SUBNET_MASK"
+puts "Subnet Prefix: /$SUBNET_PREFIX"
 puts "Gateway: $GATEWAY"
 puts "Resolver1: $RESOLVER1"
 puts "Resolver2: $RESOLVER2"
@@ -65,9 +73,7 @@ puts "Timezone: $TIMEZONE"
 puts "Log file: $LOGFILE"
 puts "===========================================\n"
 
-# ==========================================================
-# Connection test before running commands
-# ==========================================================
+# Pre-flight connectivity test
 if { ![file exists $PEM_FILE] } {
     puts "\n\[ERROR\] PEM file not found: $PEM_FILE"
     exit 3
@@ -75,117 +81,183 @@ if { ![file exists $PEM_FILE] } {
 
 set test_timeout 15
 puts "\[INFO\] Testing connectivity to $TARGET..."
-if {[catch {spawn ssh -o BatchMode=yes -o ConnectTimeout=$test_timeout -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET "echo OK"} result]} {
+if {[catch {spawn ssh -o BatchMode=yes -o ConnectTimeout=$test_timeout -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET} result]} {
     puts "\n\[NOTE\] Guardium instance $HOSTNAME is unreachable (likely no public IP or no route)."
     puts "\[NOTE\] Skipping configuration safely — instance will remain untouched."
     exit 0
 }
 
 expect {
-    -re "OK" {
-        puts "\[INFO\] Connection to $TARGET successful — continuing configuration."
+    -re $prompt_pattern {
+        puts "\[INFO\] Connection to $TARGET successful - continuing configuration."
+        send "quit\r"
         exp_close
     }
     timeout {
-        puts "\n\[NOTE\] Timeout testing $TARGET — likely in private subnet without route."
+        puts "\n\[NOTE\] Timeout testing $TARGET - likely in private subnet without route."
         puts "\[NOTE\] Skipping configuration safely."
         exit 0
     }
 }
 
-# ==========================================================
-# PHASE 1: Configure and Restart Network
-# ==========================================================
+# PHASE 1: Network Configuration
 spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
 expect {
-    -re "(?i)System is now operational in CLI regular mode" { exp_continue }
-    -re {[a-zA-Z0-9._-]+>\s*} {}
+    -nocase {System is now operational in CLI regular mode} { exp_continue }
+    -re $prompt_pattern {}
     timeout {
-        puts "\[WARN\] Timeout waiting for CLI prompt in phase 1 — instance may be unreachable (private subnet)."
+        puts "\[WARN\] Timeout waiting for CLI prompt in phase 1 - instance may be unreachable (private subnet)."
         exit 0
     }
 }
 
-send "store network interface ip $PRIVATE_IP\r"
-expect ">"
-send "store network interface mask $SUBNET_MASK\r"
-expect ">"
-send "store network routes defaultroute $GATEWAY\r"
-expect ">"
-send "store net resolvers $RESOLVER1 $RESOLVER2\r"
-expect ">"
-send "store system hostname $HOSTNAME\r"
-expect "(y/n)?"
-send "n\r"
-expect ">"
-send "store system domain $DOMAIN\r"
-expect ">"
-send "store system clock timezone $TIMEZONE\r"
-expect "(y/n)?"
-send "y\r"
-expect ">"
-sleep 30
+send -- "store network interface ip $PRIVATE_IP/$SUBNET_PREFIX\r"
+wait_for_prompt
+
+send -- "store network routes defaultroute $GATEWAY\r"
+wait_for_prompt
+
+if { $RESOLVER1 ne "" } {
+    if { $RESOLVER2 ne "" } {
+        puts "\[INFO\] Configuring DNS resolvers: $RESOLVER1, $RESOLVER2"
+        send -- "store net resolvers $RESOLVER1 $RESOLVER2\r"
+    } else {
+        puts "\[INFO\] Configuring DNS resolver: $RESOLVER1"
+        send -- "store net resolvers $RESOLVER1\r"
+    }
+    wait_for_prompt
+} else {
+    puts "\[INFO\] No DNS resolvers provided."
+}
+
+if { $HOSTNAME ne "" } {
+    puts "\[INFO\] Configuring hostname: $HOSTNAME"
+    send -- "store system hostname $HOSTNAME\r"
+    expect {
+        -timeout 30
+        "(y/n)?" {
+            send "n\r"
+            expect {
+                -timeout 210
+                -re $prompt_pattern {}
+                {Traceback (most recent call last)} {
+                    puts "\[WARN\] Hostname might not be set to $HOSTNAME - continuing."
+                    wait_for_prompt
+                }
+                timeout {
+                    puts "\[WARN\] Timeout setting hostname - continuing."
+                    wait_for_prompt
+                }
+            }
+        }
+        timeout {
+            puts "\[WARN\] Timeout setting hostname - continuing."
+            wait_for_prompt
+        }
+    }
+}
+
+if { $DOMAIN ne "" } {
+    puts "\[INFO\] Configuring domain: $DOMAIN"
+    send -- "store system domain $DOMAIN\r"
+    expect {
+        -timeout 210
+        -re $prompt_pattern {}
+        {Traceback (most recent call last)} {
+            puts "\[WARN\] Domain might not be set to $DOMAIN - continuing."
+            wait_for_prompt
+        }
+        timeout {
+            puts "\[WARN\] Timeout setting domain - continuing."
+            wait_for_prompt
+        }
+    }
+}
+
+if { $TIMEZONE ne "" } {
+    puts "\[INFO\] Configuring timezone: $TIMEZONE"
+    send -- "store system clock timezone $TIMEZONE\r"
+    expect {
+        -timeout 30
+        "(y/n)?" {
+            send "y\r"
+            expect {
+                -timeout 30
+                -re $prompt_pattern {}
+                timeout {
+                    puts "\[WARN\] Timeout after timezone confirmation."
+                    wait_for_prompt
+                }
+            }
+        }
+        -re $prompt_pattern {
+            puts "\[INFO\] Timezone set without confirmation prompt."
+        }
+        timeout {
+            puts "\[WARN\] Timeout setting timezone - continuing."
+            wait_for_prompt
+        }
+    }
+}
+
+puts "\[INFO\] Restarting network..."
 send "restart network\r"
-expect "(Yes/No)"
-send "Yes\r"
-expect ">"
-
 expect {
-    -re "Connection to.*closed" {}
-    timeout { puts "\[WARN\] Network restart may not have closed connection" }
+    -timeout 30
+    "(Yes/No)" {
+        send "Yes\r"
+        expect {
+            -timeout 900
+            -re $prompt_pattern {}
+            timeout {
+                puts "\[WARN\] Timeout waiting for network restart (900s)."
+                wait_for_prompt
+            }
+        }
+    }
+    -re $prompt_pattern {
+        puts "\[INFO\] Restarted network without confirmation prompt."
+    }
+    timeout {
+        puts "\[WARN\] Timeout restarting network - continuing."
+        wait_for_prompt
+    }
 }
 
-# ==========================================================
-# PHASE 2: Reconnect and Verify
-# ==========================================================
-sleep 20
+# PHASE 2: Reconnect
+sleep 5
 spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
 expect {
-    -re "(?i)System is now operational" { exp_continue }
-    -re {[a-zA-Z0-9._-]+>\s*} {}
+    -nocase {System is now operational in CLI regular mode} { exp_continue }
+    -re $prompt_pattern {}
     timeout {
-        puts "\[NOTE\] Timeout reconnecting — instance likely private and unreachable externally."
+        puts "\[NOTE\] Timeout reconnecting - instance likely private and unreachable externally."
         exit 0
     }
 }
 
-# ---- Verification commands ----
-send "show network interface all\r"
-expect ">"
-send "show network routes defaultroute\r"
-expect ">"
-send "show network resolvers all\r"
-expect ">"
-send "show system hostname\r"
-expect ">"
-send "show system clock timezone\r"
-expect ">"
-send "show system domain\r"
-expect ">"
-send "show unit type\r"
-expect ">"
-
-# ==========================================================
-# PHASE 3: Optional Configurations
-# Shared secret for Central Manager registration.
-# ==========================================================
-
+# PHASE 3: Shared Secret Configuration
 if { $SHARED_SECRET ne "" } {
     puts "\[INFO\] Setting shared secret for Central Manager registration."
-    send "store system shared secret $SHARED_SECRET\r"
-    expect ">"
+    send -- "store system shared secret $SHARED_SECRET\r"
+    wait_for_prompt
 }
 
-# ==========================================================
-# PHASE 4: GDP License Installation (optional)
-# ==========================================================
+# PHASE 4: License Installation
 proc install_license {key} {
-    expect ">"
+    global prompt_pattern
+
     send "store license\r"
     expect "Please paste the string received from customer services. Then press <ENTER> to continue."
-    send "$key\r"
-    send "\r"
-    expect ">"
+    send -- "$key\r"
+
+    # Wait for CLI prompt
+    expect {
+        -re $prompt_pattern {}
+        timeout {
+            puts "\[WARN\] Timeout waiting for prompt after license installation."
+        }
+    }
 }
 
 if { $LICENSE_BASE ne "" } {
@@ -198,22 +270,36 @@ if { $LICENSE_APPEND ne "" } {
     install_license $LICENSE_APPEND
 }
 
-# ==========================================================
 # PHASE 5: Central Manager Registration
-# ==========================================================
-
 if { $CENTRAL_MANAGER ne "" } {
     puts "\[INFO\] Registering with Central Manager at $CENTRAL_MANAGER."
-    send "register management $CENTRAL_MANAGER 8443\r"
-    expect ">"
+    send -- "register management $CENTRAL_MANAGER 8443\r"
+    wait_for_prompt
 }
 
-catch {
-    expect {
-        eof {}
-        timeout {}
-    }
+# Verification
+set verify_commands {
+    "show network interface all"
+    "show network routes defaultroute"
+    "show network resolvers all"
+    "show system hostname"
+    "show system clock timezone"
+    "show system domain"
+    "show unit type"
+}
+
+puts "\[INFO\] Running verification..."
+foreach command $verify_commands {
+    send "$command\r"
+    wait_for_prompt
+}
+
+# Exit
+send "quit\r"
+expect {
+    -timeout 10
+    eof {}
+    timeout { puts "\[WARN\] Timeout on quit command." }
 }
 
 puts "\n✅ Guardium Configuration Completed Successfully for $HOSTNAME using $CONNECT_MODE connection ($TARGET)\n"
-
