@@ -4,6 +4,14 @@
 
 Terraform modules for automated deployment of IBM Guardium Data Protection (GDP) appliances on AWS with intelligent readiness detection, unified AMI support, and automated configuration.
 
+## Before Starting
+
+To download the repository from the Terraform Registry, click on the View Source button on the front page of the project. This will open the GitHub repository. From there you can download the code to your computer using normal Git commands, such as:
+
+```
+git clone https://github.com/IBM/terraform-aws-gdp.git
+```
+
 ## Supported Components
 
 * **Central Manager**
