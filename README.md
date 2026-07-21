@@ -6,7 +6,7 @@ Terraform modules for automated deployment of IBM Guardium Data Protection (GDP)
 
 ## Before Starting
 
-To download the repository from the Terraform Registry, click on the View Source button on the front page of the project. This will open the GitHub repository. From there you can download the code to your computer using normal Git commands, such as:
+To download the examples on how to use this module from the Terraform Registry, click on the View Source button on the front page of the project. This will open the GitHub repository. From there you can download the code to your computer using normal Git commands, such as:
 
 ```
 git clone https://github.com/IBM/terraform-aws-gdp.git
