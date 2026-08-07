@@ -265,16 +265,34 @@ if { $LICENSE_BASE ne "" } {
     install_license $LICENSE_BASE
 }
 
-if { $LICENSE_APPEND ne "" } {
-    puts "\[INFO\] Installing Append Trial license."
-    install_license $LICENSE_APPEND
-}
+# Append license disabled pending investigation
+# if { $LICENSE_APPEND ne "" } {
+#     puts "\[INFO\] Installing Append Trial license."
+#     install_license $LICENSE_APPEND
+# }
 
 # PHASE 5: Central Manager Registration
 if { $CENTRAL_MANAGER ne "" } {
     puts "\[INFO\] Registering with Central Manager at $CENTRAL_MANAGER."
     send -- "register management $CENTRAL_MANAGER 8443\r"
-    wait_for_prompt
+    # Registration closes the session on success; absorb any output then reconnect
+    expect {
+        -timeout 120
+        eof {}
+        -re $prompt_pattern {}
+        timeout { puts "\[WARN\] Timeout waiting for registration result." }
+    }
+    # Reconnect for verification
+    sleep 5
+    spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
+    expect {
+        -nocase {System is now operational in CLI regular mode} { exp_continue }
+        -re $prompt_pattern {}
+        timeout {
+            puts "\[WARN\] Timeout reconnecting after registration - skipping verification."
+            exit 0
+        }
+    }
 }
 
 # Verification

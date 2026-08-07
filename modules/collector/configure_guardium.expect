@@ -265,10 +265,11 @@ if { $LICENSE_BASE ne "" } {
     install_license $LICENSE_BASE
 }
 
-if { $LICENSE_APPEND ne "" } {
-    puts "\[INFO\] Installing Append Trial license."
-    install_license $LICENSE_APPEND
-}
+# Append license disabled pending investigation
+# if { $LICENSE_APPEND ne "" } {
+#     puts "\[INFO\] Installing Append Trial license."
+#     install_license $LICENSE_APPEND
+# }
 
 # PHASE 5: Central Manager Registration
 if { $CENTRAL_MANAGER ne "" } {
