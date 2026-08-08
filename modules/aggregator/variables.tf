@@ -59,7 +59,7 @@ variable "aggregator_instance_type" {
 }
 
 variable "aggregator_count" {
-  description = "Number of Guardium Aggregator instances to deploy"
+  description = "Number of Guardium Aggregator instances to deploy. Typically derived automatically from shared-config/topology.json by the caller."
   type        = number
 }
 

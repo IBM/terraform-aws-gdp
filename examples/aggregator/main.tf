@@ -36,6 +36,9 @@ locals {
   final_subnet_id = coalesce(var.subnet_id, try(module.auto_vpc[0].subnet_agg_id, null))
   # Cloud-Init: resolve user_data_file path relative to this directory
   user_data       = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
+  # Count derived from topology — no manual variable needed
+  topology         = jsondecode(file("${path.module}/../../shared-config/topology.json"))
+  aggregator_count = length(local.topology.aggregators)
 }
 
 # =====================================================
@@ -148,7 +151,7 @@ module "guardium_aggregator" {
 
   iam_instance_profile = var.iam_instance_profile
 
-  aggregator_count         = var.aggregator_count
+  aggregator_count         = local.aggregator_count
   aggregator_ami_id        = var.aggregator_ami_id
   aggregator_instance_type = var.aggregator_instance_type
   ami_type                 = var.ami_type

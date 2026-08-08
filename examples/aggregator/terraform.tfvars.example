@@ -37,8 +37,7 @@ aggregator_ami_id = "ami-0955ca4c9f731cc20"
 # AWS instance type to be used for the GDP machine.
 aggregator_instance_type = "m6i.2xlarge"
 
-# How many aggregators to create.
-aggregator_count = 1
+# The number of aggregators to create is derived automatically from shared-config/topology.json.
 
 # =====================================================
 # SSH Access

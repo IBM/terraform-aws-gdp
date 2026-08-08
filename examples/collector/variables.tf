@@ -56,11 +56,6 @@ variable "collector_instance_type" {
   type        = string
 }
 
-variable "collector_count" {
-  description = "Number of Guardium Collector instances to deploy"
-  type        = number
-}
-
 variable "assign_public_ip" {
   description = "Assign public IP for Guardium Collector"
   type        = bool

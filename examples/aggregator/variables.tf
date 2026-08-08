@@ -59,11 +59,6 @@ variable "aggregator_ami_id" {
   type        = string
 }
 
-variable "aggregator_count" {
-  description = "Number of Guardium Aggregator instances to deploy."
-  type        = number
-}
-
 variable "aggregator_instance_type" {
   description = "Instance type for the Guardium Aggregator (e.g., m6i.2xlarge)."
   type        = string

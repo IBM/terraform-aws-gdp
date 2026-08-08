@@ -36,6 +36,9 @@ locals {
   final_subnet_id = coalesce(var.subnet_id, try(module.auto_vpc[0].subnet_col_id, null))
   # Cloud-Init: resolve user_data_file path relative to this directory
   user_data      = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
+  # Count derived from topology — no manual variable needed
+  topology        = jsondecode(file("${path.module}/../../shared-config/topology.json"))
+  collector_count = length(local.topology.collectors)
 }
 
 # =====================================================
@@ -146,7 +149,7 @@ module "guardium_collector" {
 
   iam_instance_profile = var.iam_instance_profile
 
-  collector_count         = var.collector_count
+  collector_count         = local.collector_count
   collector_ami_id        = var.collector_ami_id
   collector_instance_type = var.collector_instance_type
   ami_type                = var.ami_type

@@ -37,8 +37,7 @@ collector_ami_id = "ami-0d455679674d9e62f"
 # AWS instance type to be used for the GDP machine.
 collector_instance_type = "m6i.2xlarge"
 
-# How many collectors to create.
-collector_count = 1
+# The number of collectors to create is derived automatically from shared-config/topology.json.
 
 # =====================================================
 # SSH Access

@@ -1,0 +1,43 @@
+{
+    "central_managers": [
+        {
+            "instance_name": "only_cm"
+        }
+    ],
+    "aggregators": [
+        {
+            "instance_name": "agg_alpha",
+            "registration_cm": "only_cm"
+        },
+        {
+            "instance_name": "agg_bravo",
+            "registration_cm": "only_cm"
+        },
+        {
+            "instance_name": "agg_charlie",
+            "registration_cm": "only_cm"
+        }
+    ],
+    "collectors": [
+        {
+            "instance_name": "col_alpha_1",
+            "registration_cm": "only_cm",
+            "export_aggregator": "agg_alpha"
+        },
+        {
+            "instance_name": "col_alpha_2",
+            "registration_cm": "only_cm",
+            "export_aggregator": "agg_alpha"
+        },
+        {
+            "instance_name": "col_bravo_1",
+            "registration_cm": "only_cm",
+            "export_aggregator": "agg_bravo"
+        },
+        {
+            "instance_name": "col_delta_1",
+            "registration_cm": "only_cm",
+            "export_aggregator": ""
+        }
+    ]
+}

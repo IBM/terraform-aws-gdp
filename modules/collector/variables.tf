@@ -59,7 +59,7 @@ variable "collector_instance_type" {
 }
 
 variable "collector_count" {
-  description = "Number of Guardium Collector instances to deploy"
+  description = "Number of Guardium Collector instances to deploy. Typically derived automatically from shared-config/topology.json by the caller."
   type        = number
 }
 
