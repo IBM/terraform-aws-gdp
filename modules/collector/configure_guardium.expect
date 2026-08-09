@@ -274,9 +274,45 @@ if { $LICENSE_BASE ne "" } {
 
 # PHASE 5: Central Manager Registration
 if { $CENTRAL_MANAGER ne "" } {
-    puts "\[INFO\] Registering with Central Manager at $CENTRAL_MANAGER."
-    send -- "register management $CENTRAL_MANAGER 8443\r"
-    wait_for_prompt
+    set reg_max_attempts 5
+    set reg_attempt 0
+    set reg_success 0
+
+    while { $reg_attempt < $reg_max_attempts && $reg_success == 0 } {
+        incr reg_attempt
+        puts "\[INFO\] Registering with Central Manager at $CENTRAL_MANAGER (attempt $reg_attempt/$reg_max_attempts)."
+        send -- "register management $CENTRAL_MANAGER 8443\r"
+        expect {
+            -timeout 120
+            -nocase "Successfully registered" {
+                set reg_success 1
+            }
+            -nocase "Could not register" {
+                puts "\[WARN\] Registration attempt $reg_attempt failed: CM rejected the request."
+            }
+            eof {
+                # Session closed - treat as success (some firmware versions close on success)
+                set reg_success 1
+            }
+            -re $prompt_pattern {
+                puts "\[WARN\] Registration attempt $reg_attempt failed: got CLI prompt back (expected success message)."
+            }
+            timeout {
+                puts "\[WARN\] Registration attempt $reg_attempt timed out."
+            }
+        }
+
+        if { $reg_success == 0 && $reg_attempt < $reg_max_attempts } {
+            set delay [expr { 10 * $reg_attempt }]
+            puts "\[INFO\] Waiting ${delay}s before retry..."
+            sleep $delay
+        }
+    }
+
+    if { $reg_success == 0 } {
+        puts "\[ERROR\] Central Manager registration failed after $reg_max_attempts attempts. Aborting."
+        exit 1
+    }
 }
 
 # Verification
