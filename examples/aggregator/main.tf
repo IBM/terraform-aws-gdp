@@ -40,6 +40,40 @@ locals {
   topology             = jsondecode(file("${path.module}/../../shared-config/topology.json"))
   aggregator_count     = length(local.topology.aggregators)
   agg_instance_names   = [for agg in local.topology.aggregators : agg.instance_name]
+  # Central Manager: name from topology, IP discovered from AWS
+  cm_name       = local.topology.central_managers[0].instance_name
+  distinct_cms  = distinct([for agg in local.topology.aggregators : agg.registration_cm])
+  cm_private_ip = data.aws_instance.central_manager.private_ip
+}
+
+# Validate that all aggregators register with the same Central Manager
+resource "null_resource" "validate_single_cm" {
+  count = length(local.distinct_cms) == 1 ? 0 : 1
+
+  provisioner "local-exec" {
+    command = <<EOT
+echo "[ERROR] All aggregators must register with the same Central Manager, but topology.json lists multiple: ${join(", ", local.distinct_cms)}" >&2
+exit 1
+EOT
+  }
+}
+
+# =====================================================
+# 1️⃣b Lookup Central Manager instance from AWS
+# =====================================================
+data "aws_instance" "central_manager" {
+  filter {
+    name   = "tag:Name"
+    values = [local.cm_name]
+  }
+  filter {
+    name   = "instance-state-name"
+    values = ["running"]
+  }
+  filter {
+    name   = "vpc-id"
+    values = [local.final_vpc_id]
+  }
 }
 
 # =====================================================
@@ -162,7 +196,7 @@ module "guardium_aggregator" {
   domain              = var.domain
   timezone            = var.timezone
   shared_secret       = var.shared_secret
-  central_manager_ip  = var.central_manager_ip
+  central_manager_ip  = local.cm_private_ip
   license_base        = var.license_base
   license_append      = var.license_append
   user_data           = local.user_data

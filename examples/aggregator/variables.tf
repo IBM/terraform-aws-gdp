@@ -80,12 +80,6 @@ variable "shared_secret" {
   default     = ""
 }
 
-variable "central_manager_ip" {
-  description = "IP address of the Central Manager to register with."
-  type        = string
-  default     = ""
-}
-
 # =====================================================
 # Cloud-Init (optional)
 # =====================================================

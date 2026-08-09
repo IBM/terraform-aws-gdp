@@ -92,13 +92,6 @@ user_data_file = ""
 shared_secret = "guard"
 
 # =====================================================
-# Central Manager Registration
-# =====================================================
-
-# IP address of the Central Manager to register with
-central_manager_ip = "10.0.0.10"
-
-# =====================================================
 # GDP License Keys (optional)
 # =====================================================
 
