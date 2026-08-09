@@ -28,7 +28,7 @@ resource "aws_instance" "aggregator" {
   tags = merge(
     var.tags,
     {
-      Name = format("%s-%02d", var.instance_name_prefix, count.index + 1)
+      Name = var.instance_names[count.index]
       Role = "Aggregator"
     }
   )

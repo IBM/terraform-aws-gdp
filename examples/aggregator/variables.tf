@@ -196,16 +196,6 @@ variable "existing_guardium_collector_sg_id" {
 }
 
 # =====================================================
-# Instance Naming Configuration
-# =====================================================
-
-variable "instance_name_prefix" {
-  description = "Prefix for instance name tag (e.g., 'guard-agg'). The instance number will be appended."
-  type        = string
-  default     = "guard-agg"
-}
-
-# =====================================================
 # Root Volume Configuration
 # =====================================================
 

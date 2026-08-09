@@ -166,10 +166,9 @@ variable "guardium_ready_log_file" {
 # Instance Naming Configuration
 ###########################################
 
-variable "instance_name_prefix" {
-  description = "Prefix for instance name tag (e.g., 'guard-agg'). The instance number will be appended."
-  type        = string
-  default     = "guard-agg"
+variable "instance_names" {
+  description = "List of Name tag values for each aggregator instance, one per instance."
+  type        = list(string)
 }
 
 ###########################################

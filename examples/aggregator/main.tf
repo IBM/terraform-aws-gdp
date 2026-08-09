@@ -37,8 +37,9 @@ locals {
   # Cloud-Init: resolve user_data_file path relative to this directory
   user_data       = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
   # Count derived from topology — no manual variable needed
-  topology         = jsondecode(file("${path.module}/../../shared-config/topology.json"))
-  aggregator_count = length(local.topology.aggregators)
+  topology             = jsondecode(file("${path.module}/../../shared-config/topology.json"))
+  aggregator_count     = length(local.topology.aggregators)
+  agg_instance_names   = [for agg in local.topology.aggregators : agg.instance_name]
 }
 
 # =====================================================
@@ -169,7 +170,7 @@ module "guardium_aggregator" {
   assign_public_ip    = var.assign_public_ip
 
   # Instance naming and root volume configuration
-  instance_name_prefix              = var.instance_name_prefix
+  instance_names                    = local.agg_instance_names
   root_volume_size                  = var.root_volume_size
   root_volume_type                  = var.root_volume_type
   root_volume_delete_on_termination = var.root_volume_delete_on_termination

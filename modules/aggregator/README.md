@@ -56,24 +56,24 @@ All parameters must be modified in the terraform.tfvars file. See the [documenta
 | tags -> Owner | Email address of the GDP owner | 
 | tags -> Role | Role of the appliance, e.g. MyRole | 
 
-### Instance Naming and Storage Configuration (Optional)
+### Instance Naming and Storage Configuration
 
 | Name | Default | Description |
 | --- | --- | --- |
-| instance_name_prefix | "guard-agg" | Prefix for instance name tag. Instance number will be appended (e.g., guard-agg-01). |
+| instance_names | (required) | List of Name tag values for each aggregator instance, one per instance. Names are sourced from `topology.json`. |
 | root_volume_size | 1500 | Size of the root EBS volume in GB. Minimum 1500 GB for Aggregator. |
 | root_volume_type | "gp3" | Type of the root EBS volume (gp2, gp3, io1, io2). |
 | root_volume_delete_on_termination | true | Whether to delete the root volume when the instance is terminated. |
 
 **Example:**
 
-Custom naming and storage:
+Custom storage:
 ```hcl
 module "aggregator" {
-  source = "./modules/aggregator"
-  instance_name_prefix = "prod-agg"
-  root_volume_size     = 2000
-  root_volume_type     = "gp3"
+  source         = "./modules/aggregator"
+  instance_names = ["prod-agg-alpha", "prod-agg-bravo"]
+  root_volume_size = 2000
+  root_volume_type = "gp3"
   # ... other required variables ...
 }
 ```
