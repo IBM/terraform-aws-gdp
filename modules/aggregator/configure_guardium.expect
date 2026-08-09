@@ -281,8 +281,57 @@ if { $CENTRAL_MANAGER ne "" } {
         eof {}
         -re $prompt_pattern {}
         timeout { puts "\[WARN\] Timeout waiting for registration result." }
+    set reg_max_attempts 5
+    set reg_attempt 0
+    set reg_success 0
+
+    while { $reg_attempt < $reg_max_attempts && $reg_success == 0 } {
+        incr reg_attempt
+        puts "\[INFO\] Registering with Central Manager at $CENTRAL_MANAGER (attempt $reg_attempt/$reg_max_attempts)."
+        send -- "register management $CENTRAL_MANAGER 8443\r"
+        expect {
+            -timeout 120
+            -nocase "Successfully registered" {
+                set reg_success 1
+            }
+            -nocase "Could not register" {
+                puts "\[WARN\] Registration attempt $reg_attempt failed: CM rejected the request."
+            }
+            eof {
+                # Session closed - treat as success (some firmware versions close on success)
+                set reg_success 1
+            }
+            -re $prompt_pattern {
+                puts "\[WARN\] Registration attempt $reg_attempt failed: got CLI prompt back (expected eof or success message)."
+            }
+            timeout {
+                puts "\[WARN\] Registration attempt $reg_attempt timed out."
+            }
+        }
+
+        if { $reg_success == 0 && $reg_attempt < $reg_max_attempts } {
+            set delay [expr { 10 * $reg_attempt }]
+            puts "\[INFO\] Waiting ${delay}s before retry..."
+            sleep $delay
+            # Reconnect for next attempt if the session is still open
+            spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
+            expect {
+                -nocase {System is now operational in CLI regular mode} { exp_continue }
+                -re $prompt_pattern {}
+                timeout {
+                    puts "\[WARN\] Timeout reconnecting for registration retry - aborting."
+                    exit 1
+                }
+            }
+        }
     }
-    # Reconnect for verification
+
+    if { $reg_success == 0 } {
+        puts "\[ERROR\] Central Manager registration failed after $reg_max_attempts attempts. Aborting."
+        exit 1
+    }
+
+    # Reconnect for verification (registration closes the session on success)
     sleep 5
     spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
     expect {
