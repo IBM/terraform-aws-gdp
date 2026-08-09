@@ -281,6 +281,7 @@ if { $CENTRAL_MANAGER ne "" } {
         eof {}
         -re $prompt_pattern {}
         timeout { puts "\[WARN\] Timeout waiting for registration result." }
+    }
     set reg_max_attempts 5
     set reg_attempt 0
     set reg_success 0
