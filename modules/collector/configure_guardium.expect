@@ -315,6 +315,18 @@ if { $CENTRAL_MANAGER ne "" } {
     }
 }
 
+# Reconnect for verification (registration closes the session on success)
+sleep 5
+spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
+expect {
+    -nocase {System is now operational in CLI regular mode} { exp_continue }
+    -re $prompt_pattern {}
+    timeout {
+        puts "\[WARN\] Timeout reconnecting after registration - skipping verification."
+        exit 0
+    }
+}
+
 # Verification
 set verify_commands {
     "show network interface all"
