@@ -55,11 +55,11 @@ All parameters must be modified in the terraform.tfvars file. See the [documenta
 | tags -> Owner | Email address of the GDP owner | 
 | tags -> Role | Role of the appliance, e.g. MyRole | 
 
-### Instance Naming and Storage Configuration (Optional)
+### Instance Naming and Storage Configuration
 
 | Name | Default | Description |
 | --- | --- | --- |
-| instance_name_prefix | "guard-cm" | Prefix for instance name tag. Instance number will be appended (e.g., guard-cm-01). |
+| instance_names | (required) | List of Name tag values for each central manager instance, one per instance. |
 | root_volume_size | 1500 | Size of the root EBS volume in GB. Minimum 1500 GB for Central Manager. |
 | root_volume_type | "gp3" | Type of the root EBS volume (gp2, gp3, io1, io2). |
 | root_volume_delete_on_termination | true | Whether to delete the root volume when the instance is terminated. |
@@ -69,10 +69,10 @@ All parameters must be modified in the terraform.tfvars file. See the [documenta
 Custom naming and storage:
 ```hcl
 module "central_manager" {
-  source = "./modules/central-manager"
-  instance_name_prefix = "prod-cm"
-  root_volume_size     = 2000
-  root_volume_type     = "gp3"
+  source        = "./modules/central-manager"
+  instance_names = ["prod-cm"]
+  root_volume_size = 2000
+  root_volume_type = "gp3"
   # ... other required variables ...
 }
 ```

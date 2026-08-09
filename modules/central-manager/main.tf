@@ -6,12 +6,12 @@
 # IBM Guardium GDP - Central Manager Module
 
 resource "aws_instance" "central_manager" {
-  count         = var.central_manager_count
-  ami           = var.central_manager_ami_id
-  instance_type = var.central_manager_instance_type
-  subnet_id     = var.subnet_id
+  count                  = var.central_manager_count
+  ami                    = var.central_manager_ami_id
+  instance_type          = var.central_manager_instance_type
+  subnet_id              = var.subnet_id
   vpc_security_group_ids = var.vpc_security_group_ids
-  key_name      = var.key_name
+  key_name               = var.key_name
 
   # IAM instance profile for AWS service access (e.g., CloudWatch, S3, SQS)
   iam_instance_profile = var.iam_instance_profile
@@ -28,7 +28,7 @@ resource "aws_instance" "central_manager" {
   tags = merge(
     var.tags,
     {
-      Name = format("%s-%02d", var.instance_name_prefix, count.index + 1)
+      Name = var.instance_names[count.index]
       Role = "CentralManager"
     }
   )
@@ -70,7 +70,7 @@ locals {
 
   # Final user_data: merged for unified AMI, pass-through for legacy
   unified_user_data = "#cloud-config\n${yamlencode(local.merged_config)}"
-  final_user_data   = lower(var.ami_type) == "unified" ? local.unified_user_data : (
+  final_user_data = lower(var.ami_type) == "unified" ? local.unified_user_data : (
     var.user_data != null && var.user_data != "" ? var.user_data : null
   )
 }
@@ -141,10 +141,10 @@ EOT
 }
 
 output "central_manager_public_ips" {
-  value       = [for i in aws_instance.central_manager : try(i.public_ip, null)]
+  value = [for i in aws_instance.central_manager : try(i.public_ip, null)]
 }
 
 output "central_manager_private_ips" {
-  value       = [for i in aws_instance.central_manager : i.private_ip]
+  value = [for i in aws_instance.central_manager : i.private_ip]
 }
 

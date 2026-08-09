@@ -35,7 +35,16 @@ locals {
   final_vpc_id    = coalesce(var.vpc_id, try(module.auto_vpc[0].vpc_id, null))
   final_subnet_id = coalesce(var.subnet_id, try(module.auto_vpc[0].subnet_cm_id, null))
   # Cloud-Init: resolve user_data_file path relative to this directory
-  user_data      = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
+  user_data         = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
+  topology          = jsondecode(file("${path.module}/../../shared-config/topology.json"))
+  cm_instance_names = [for cm in local.topology.central_managers : cm.instance_name]
+}
+
+check "single_central_manager" {
+  assert {
+    condition     = length(local.topology.central_managers) == 1
+    error_message = "topology.json must define exactly one central_manager. Found ${length(local.topology.central_managers)}."
+  }
 }
 
 # =====================================================
@@ -71,7 +80,7 @@ resource "aws_security_group" "guardium_cm_sg" {
   # --- Ingress rules for Guardium ports ---
   dynamic "ingress" {
     for_each = [
-      { from = 22,   to = 22,   desc = "SSH access" },
+      { from = 22, to = 22, desc = "SSH access" },
       { from = 8443, to = 8443, desc = "Guardium Web Console" },
       { from = 3306, to = 3306, desc = "Database communications" },
       { from = 8447, to = 8447, desc = "Guardium patch/upgrade" },
@@ -133,9 +142,9 @@ resource "aws_security_group_rule" "guardium_cm_ssh_allowed_cidrs" {
 module "guardium_central_manager" {
   source = "../../modules/central-manager"
 
-  region                 = var.region
-  vpc_id                 = local.final_vpc_id
-  subnet_id              = local.final_subnet_id
+  region    = var.region
+  vpc_id    = local.final_vpc_id
+  subnet_id = local.final_subnet_id
   vpc_security_group_ids = (
     var.existing_guardium_cm_sg_id != "" ? [var.existing_guardium_cm_sg_id] :
     length(try(data.aws_security_groups.guardium_cm_existing[0].ids, [])) > 0
@@ -148,7 +157,7 @@ module "guardium_central_manager" {
 
   iam_instance_profile = var.iam_instance_profile
 
-  central_manager_count         = var.central_manager_count
+  central_manager_count         = length(local.topology.central_managers)
   central_manager_ami_id        = var.central_manager_ami_id
   central_manager_instance_type = var.central_manager_instance_type
   ami_type                      = var.ami_type
@@ -165,7 +174,7 @@ module "guardium_central_manager" {
   assign_public_ip = var.assign_public_ip
 
   # Instance naming and root volume configuration
-  instance_name_prefix              = var.instance_name_prefix
+  instance_names                    = local.cm_instance_names
   root_volume_size                  = var.root_volume_size
   root_volume_type                  = var.root_volume_type
   root_volume_delete_on_termination = var.root_volume_delete_on_termination

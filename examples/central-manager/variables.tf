@@ -59,12 +59,6 @@ variable "central_manager_ami_id" {
   type        = string
 }
 
-variable "central_manager_count" {
-  description = "Number of Guardium Central Manager instances to deploy."
-  type        = number
-  default     = 1
-}
-
 variable "central_manager_instance_type" {
   description = "Instance type for the Guardium Central Manager (e.g., m6i.2xlarge)."
   type        = string
@@ -193,16 +187,6 @@ variable "existing_guardium_collector_sg_id" {
   description = "Existing Guardium Collector Security Group ID (optional, reserved for future cross-linking)."
   type        = string
   default     = ""
-}
-
-# =====================================================
-# Instance Naming Configuration
-# =====================================================
-
-variable "instance_name_prefix" {
-  description = "Prefix for instance name tag (e.g., 'guard-cm'). The instance number will be appended."
-  type        = string
-  default     = "guard-cm"
 }
 
 # =====================================================

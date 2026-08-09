@@ -160,10 +160,9 @@ variable "guardium_ready_log_file" {
 # Instance Naming Configuration
 ###########################################
 
-variable "instance_name_prefix" {
-  description = "Prefix for instance name tag (e.g., 'guard-cm'). The instance number will be appended."
-  type        = string
-  default     = "guard-cm"
+variable "instance_names" {
+  description = "List of Name tag values for each central manager instance, one per instance."
+  type        = list(string)
 }
 
 ###########################################
