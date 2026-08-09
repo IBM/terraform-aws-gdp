@@ -24,8 +24,8 @@ proc wait_for_prompt {} {
 }
 
 # Argument validation
-if {$argc != 14} {
-    puts "\[ERROR\] Expected 14 arguments, got $argc\nArgs: $argv"
+if {$argc != 15} {
+    puts "\[ERROR\] Expected 15 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
