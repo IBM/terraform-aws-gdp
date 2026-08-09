@@ -273,15 +273,6 @@ if { $LICENSE_BASE ne "" } {
 
 # PHASE 5: Central Manager Registration
 if { $CENTRAL_MANAGER ne "" } {
-    puts "\[INFO\] Registering with Central Manager at $CENTRAL_MANAGER."
-    send -- "register management $CENTRAL_MANAGER 8443\r"
-    # Registration closes the session on success; absorb any output then reconnect
-    expect {
-        -timeout 120
-        eof {}
-        -re $prompt_pattern {}
-        timeout { puts "\[WARN\] Timeout waiting for registration result." }
-    }
     set reg_max_attempts 5
     set reg_attempt 0
     set reg_success 0
