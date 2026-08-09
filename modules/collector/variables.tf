@@ -162,6 +162,12 @@ variable "guardium_ready_log_file" {
   default     = ""
 }
 
+variable "export_aggregator_ips" {
+  description = "Map of collector instance name to its export aggregator's private IP. Used to configure data export via grdapi configure_export."
+  type        = map(string)
+  default     = {}
+}
+
 ###########################################
 # Instance Naming Configuration
 ###########################################

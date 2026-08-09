@@ -44,6 +44,17 @@ locals {
   cm_name       = local.topology.central_managers[0].instance_name
   distinct_cms  = distinct([for col in local.topology.collectors : col.registration_cm])
   cm_private_ip = data.aws_instance.central_manager.private_ip
+  # Aggregator export: distinct aggregator names assigned to collectors
+  distinct_agg_names = toset([
+    for col in local.topology.collectors : col.export_aggregator
+    if try(col.export_aggregator, "") != ""
+  ])
+  # Map each collector instance name to its aggregator's private IP
+  export_aggregator_ips = {
+    for col in local.topology.collectors :
+    col.instance_name => data.aws_instance.aggregator[col.export_aggregator].private_ip
+    if try(col.export_aggregator, "") != ""
+  }
 }
 
 # Validate that all collectors register with the same Central Manager
@@ -65,6 +76,26 @@ data "aws_instance" "central_manager" {
   filter {
     name   = "tag:Name"
     values = [local.cm_name]
+  }
+  filter {
+    name   = "instance-state-name"
+    values = ["running"]
+  }
+  filter {
+    name   = "vpc-id"
+    values = [local.final_vpc_id]
+  }
+}
+
+# =====================================================
+# 1️⃣c Lookup Aggregator instances from AWS (for export configuration)
+# =====================================================
+data "aws_instance" "aggregator" {
+  for_each = local.distinct_agg_names
+
+  filter {
+    name   = "tag:Name"
+    values = [each.key]
   }
   filter {
     name   = "instance-state-name"
@@ -200,6 +231,8 @@ module "guardium_collector" {
   user_data           = local.user_data
   tags                = var.tags
   assign_public_ip    = var.assign_public_ip
+
+  export_aggregator_ips             = local.export_aggregator_ips
 
   # Instance naming and root volume configuration
   instance_names                    = local.col_instance_names

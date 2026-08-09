@@ -44,6 +44,7 @@ set SHARED_SECRET     [lindex $argv 10]
 set CENTRAL_MANAGER   [lindex $argv 11]
 set LICENSE_BASE      [lindex $argv 12]
 set LICENSE_APPEND    [lindex $argv 13]
+set AGG_HOST          [lindex $argv 14]
 
 # Determine connection target (prefer public IP)
 if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
@@ -292,6 +293,14 @@ set verify_commands {
 puts "\[INFO\] Running verification..."
 foreach command $verify_commands {
     send "$command\r"
+    wait_for_prompt
+}
+
+# PHASE 6: Set up data export
+if { $AGG_HOST ne "" } {
+    send "grdapi configure_export aggHost=$AGG_HOST exportOlderThan=1 exportValues=1 ignoreOlderThan=2\r"
+    wait_for_prompt
+    send "grdapi schedule_job jobType=DataExport cronString=\"0 0 2 * * ? *\"\r"
     wait_for_prompt
 }
 
