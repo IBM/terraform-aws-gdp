@@ -92,12 +92,6 @@ variable "shared_secret" {
   default     = ""
 }
 
-variable "central_manager_ip" {
-  description = "IP address of the Central Manager to register with."
-  type        = string
-  default     = ""
-}
-
 # =====================================================
 # Cloud-Init User Data (optional)
 # =====================================================
@@ -171,16 +165,6 @@ variable "existing_guardium_collector_sg_id" {
   description = "Existing Guardium Collector Security Group ID (optional, reserved for future use)."
   type        = string
   default     = ""
-}
-
-# =====================================================
-# Instance Naming Configuration
-# =====================================================
-
-variable "instance_name_prefix" {
-  description = "Prefix for instance name tag (e.g., 'guard-col'). The instance number will be appended."
-  type        = string
-  default     = "guard-col"
 }
 
 # =====================================================

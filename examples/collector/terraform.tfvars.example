@@ -92,13 +92,6 @@ user_data_file = "./user-data.yaml"
 shared_secret = "guard"
 
 # =====================================================
-# Central Manager Registration
-# =====================================================
-
-# IP address of the Central Manager to register with
-central_manager_ip = "10.0.0.10"
-
-# =====================================================
 # GDP License Keys (optional)
 # =====================================================
 
@@ -131,11 +124,8 @@ tags = {
 }
 
 # =====================================================
-# Instance Naming and Storage (optional)
+# Storage (optional)
 # =====================================================
-
-# Prefix for instance name tag. Instance number will be appended (e.g., guard-col-01)
-# instance_name_prefix = "guard-col"
 
 # Size of the root EBS volume in GB (minimum 550 GB for Collector)
 # root_volume_size = 550

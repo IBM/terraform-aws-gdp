@@ -37,8 +37,43 @@ locals {
   # Cloud-Init: resolve user_data_file path relative to this directory
   user_data      = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
   # Count derived from topology — no manual variable needed
-  topology        = jsondecode(file("${path.module}/../../shared-config/topology.json"))
-  collector_count = length(local.topology.collectors)
+  topology             = jsondecode(file("${path.module}/../../shared-config/topology.json"))
+  collector_count      = length(local.topology.collectors)
+  col_instance_names   = [for col in local.topology.collectors : col.instance_name]
+  # Central Manager: name from topology, IP discovered from AWS
+  cm_name       = local.topology.central_managers[0].instance_name
+  distinct_cms  = distinct([for col in local.topology.collectors : col.registration_cm])
+  cm_private_ip = data.aws_instance.central_manager.private_ip
+}
+
+# Validate that all collectors register with the same Central Manager
+resource "null_resource" "validate_single_cm" {
+  count = length(local.distinct_cms) == 1 ? 0 : 1
+
+  provisioner "local-exec" {
+    command = <<EOT
+echo "[ERROR] All collectors must register with the same Central Manager, but topology.json lists multiple: ${join(", ", local.distinct_cms)}" >&2
+exit 1
+EOT
+  }
+}
+
+# =====================================================
+# 1️⃣b Lookup Central Manager instance from AWS
+# =====================================================
+data "aws_instance" "central_manager" {
+  filter {
+    name   = "tag:Name"
+    values = [local.cm_name]
+  }
+  filter {
+    name   = "instance-state-name"
+    values = ["running"]
+  }
+  filter {
+    name   = "vpc-id"
+    values = [local.final_vpc_id]
+  }
 }
 
 # =====================================================
@@ -159,7 +194,7 @@ module "guardium_collector" {
   domain              = var.domain
   timezone            = var.timezone
   shared_secret       = var.shared_secret
-  central_manager_ip  = var.central_manager_ip
+  central_manager_ip  = local.cm_private_ip
   license_base        = var.license_base
   license_append      = var.license_append
   user_data           = local.user_data
@@ -167,7 +202,7 @@ module "guardium_collector" {
   assign_public_ip    = var.assign_public_ip
 
   # Instance naming and root volume configuration
-  instance_name_prefix              = var.instance_name_prefix
+  instance_names                    = local.col_instance_names
   root_volume_size                  = var.root_volume_size
   root_volume_type                  = var.root_volume_type
   root_volume_delete_on_termination = var.root_volume_delete_on_termination
