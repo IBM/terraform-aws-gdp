@@ -24,8 +24,8 @@ proc wait_for_prompt {} {
 }
 
 # Argument validation
-if {$argc != 14} {
-    puts "\[ERROR\] Expected 14 arguments, got $argc\nArgs: $argv"
+if {$argc != 15} {
+    puts "\[ERROR\] Expected 15 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
@@ -42,8 +42,9 @@ set RESOLVER2         [lindex $argv 8]
 set TIMEZONE          [lindex $argv 9]
 set SHARED_SECRET     [lindex $argv 10]
 set CENTRAL_MANAGER   [lindex $argv 11]
-set LICENSE_BASE      [lindex $argv 12]
-set LICENSE_APPEND    [lindex $argv 13]
+set LICENSE_BASE              [lindex $argv 12]
+set LICENSE_APPEND            [lindex $argv 13]
+set INSTANCE_NAME_PREFIX      [lindex $argv 14]
 
 # Determine connection target (prefer public IP)
 if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
@@ -356,6 +357,30 @@ foreach command $verify_commands {
 # PHASE 6: Set up data import
 send "grdapi schedule_job jobType=DataImport cronString=\"0 0 4 * * ? *\"\r"
 wait_for_prompt
+
+# PHASE 7: Set aggregator as CM backup target (first aggregator only)
+# User can edit this if statemtn to change which aggregator will be used.
+if { $HOSTNAME eq "${INSTANCE_NAME_PREFIX}-01" } {
+    if { $CENTRAL_MANAGER ne "" } {
+        puts "\[INFO\] $HOSTNAME is the first aggregator — setting as CM backup target on $CENTRAL_MANAGER."
+        spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CENTRAL_MANAGER
+        expect {
+            -nocase {System is now operational in CLI regular mode} { exp_continue }
+            -re $prompt_pattern {}
+            timeout {
+                puts "\[WARN\] Timeout connecting to Central Manager $CENTRAL_MANAGER — skipping backup_cm_set."
+            }
+        }
+        send -- "grdapi backup_cm_set ip=$PRIVATE_IP\r"
+        wait_for_prompt
+        send "quit\r"
+        expect {
+            -timeout 10
+            eof {}
+            timeout { puts "\[WARN\] Timeout on quit from Central Manager." }
+        }
+    }
+}
 
 # Exit
 send "quit\r"
