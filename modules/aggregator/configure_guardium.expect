@@ -353,6 +353,10 @@ foreach command $verify_commands {
     wait_for_prompt
 }
 
+# PHASE 6: Set up data import
+send "grdapi schedule_job jobType=DataImport cronString=\"0 0 4 * * ? *\"\r"
+wait_for_prompt
+
 # Exit
 send "quit\r"
 expect {

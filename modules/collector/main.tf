@@ -118,6 +118,20 @@ resource "null_resource" "configure_guardium" {
 echo "============================================================"
 echo "[INFO] Configuring Guardium Collector: ${each.value.hostname}"
 echo "[INFO] Connection target: ${each.value.public_dns}"
+
+# Extract 1-based collector index from the hostname suffix (e.g. "guard-col-03" → 3)
+COLLECTOR_IDX=$(expr "${each.value.hostname}" : '.*-\([0-9]*\)$' | sed 's/^0*//' | grep -v '^$' || echo 1)
+
+# Resolve the aggregator IP for this collector
+AGG_HOST=$(COLLECTOR_INDEX="$COLLECTOR_IDX" \
+           COLLECTOR_NAME="${each.value.hostname}" \
+           COLLECTORS_PER_AGG="${var.number_collectors_per_aggregator}" \
+           AGG_NAME_PREFIX="${var.aggregator_name_prefix}" \
+           AWS_REGION="${var.region}" \
+           ${path.module}/../../scripts/resolve_agg_host.sh)
+
+echo "[INFO] Aggregator host for ${each.value.hostname}: $AGG_HOST"
+
 /usr/bin/expect ${path.module}/configure_guardium.expect \
   "${each.value.hostname}" \
   "${each.value.private_ip}" \
@@ -132,7 +146,8 @@ echo "[INFO] Connection target: ${each.value.public_dns}"
   "${var.shared_secret}" \
   "${var.central_manager_ip}" \
   "${var.license_base}" \
-  "${var.license_append}"
+  "${var.license_append}" \
+  "$AGG_HOST"
 echo "[INFO] Collector configuration complete for ${each.value.hostname}"
 echo "============================================================"
 EOT

@@ -163,6 +163,10 @@ module "guardium_collector" {
   tags                = var.tags
   assign_public_ip    = var.assign_public_ip
 
+  # Aggregator assignment
+  number_collectors_per_aggregator  = var.number_collectors_per_aggregator
+  aggregator_name_prefix            = var.aggregator_name_prefix
+
   # Instance naming and root volume configuration
   instance_name_prefix              = var.instance_name_prefix
   root_volume_size                  = var.root_volume_size

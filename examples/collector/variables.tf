@@ -179,6 +179,22 @@ variable "existing_guardium_collector_sg_id" {
 }
 
 # =====================================================
+# Data Export / Aggregator Assignment
+# =====================================================
+
+variable "number_collectors_per_aggregator" {
+  description = "Number of collectors to assign to each aggregator."
+  type        = number
+  default     = 0
+}
+
+variable "aggregator_name_prefix" {
+  description = "Name prefix used for aggregator instances."
+  type        = string
+  default     = "guard-agg"
+}
+
+# =====================================================
 # Instance Naming Configuration
 # =====================================================
 
