@@ -358,7 +358,16 @@ foreach command $verify_commands {
 send "grdapi schedule_job jobType=DataImport cronString=\"0 0 4 * * ? *\"\r"
 wait_for_prompt
 
-# PHASE 7: Set aggregator as CM backup target (first aggregator only)
+# PHASE 7: Configure Archive
+# NOTE: This phase is disabled by default (if { 0 }).
+# To enable it, change "if { 0 }" to "if { 1 }" and edit the configuration command to your requirements.
+if { 0 } {
+    puts "\[INFO\] Configuring archive..."
+    send -- "grdapi configure_archive archiveOlderThan=1 archiveValues=1 destHost=10.10.10.10 ignoreOlderThan=30 protocol=SFTP targetDir=/archive/dir userName=root passwd=1234\r"
+    wait_for_prompt
+}
+
+# PHASE 8: Set aggregator as CM backup target (first aggregator only)
 # User can edit this if statemtn to change which aggregator will be used.
 if { $HOSTNAME eq "${INSTANCE_NAME_PREFIX}-01" } {
     if { $CENTRAL_MANAGER ne "" } {

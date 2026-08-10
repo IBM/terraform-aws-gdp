@@ -291,6 +291,15 @@ foreach command $verify_commands {
     wait_for_prompt
 }
 
+# PHASE 7: Configure Archive
+# NOTE: This phase is disabled by default (if { 0 }).
+# To enable it, change "if { 0 }" to "if { 1 }" and edit the configuration command to your requirements.
+if { 0 } {
+    puts "\[INFO\] Configuring archive..."
+    send -- "grdapi configure_archive archiveOlderThan=1 archiveValues=1 destHost=10.10.10.10 ignoreOlderThan=30 protocol=SFTP targetDir=/archive/dir userName=root passwd=1234\r"
+    wait_for_prompt
+}
+
 # Exit
 send "quit\r"
 expect {
