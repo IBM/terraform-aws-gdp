@@ -352,7 +352,33 @@ if { $AGG_HOST ne "" } {
     wait_for_prompt
 }
 
-# PHASE 7: Configure Archive
+# PHASE 7: Install policy on Central Manager for this unit
+# Users can modify which policy is installed. If so, be sure to consistently change the other appliance types as well.
+if { $CENTRAL_MANAGER ne "" } {
+    puts "\[INFO\] Installing policy on Central Manager for $HOSTNAME ($PRIVATE_IP)..."
+    spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CENTRAL_MANAGER
+    expect {
+        -nocase {System is now operational in CLI regular mode} { exp_continue }
+        -re $prompt_pattern {}
+        timeout {
+            puts "\[WARN\] Timeout connecting to Central Manager $CENTRAL_MANAGER — skipping policy_install."
+        }
+    }
+    if { [catch {
+        send -- "grdapi policy_install policy=\"Default - Ignore Data Activity for Unknown Connections\" api_target_host=\"$PRIVATE_IP\"\r"
+        wait_for_prompt
+    } err] } {
+        puts "\[WARN\] policy_install failed: $err - continuing."
+    }
+    send "quit\r"
+    expect {
+        -timeout 10
+        eof {}
+        timeout { puts "\[WARN\] Timeout on quit from Central Manager." }
+    }
+}
+
+# PHASE 8: Configure Archive
 # NOTE: This phase is disabled by default (if { 0 }).
 # To enable it, change "if { 0 }" to "if { 1 }" and edit the configuration command to your requirements.
 if { 0 } {

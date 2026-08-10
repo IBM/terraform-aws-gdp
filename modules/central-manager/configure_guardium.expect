@@ -274,7 +274,25 @@ puts "\[INFO\] Setting unit type to manager..."
 send "store unit type manager\r"
 wait_for_prompt
 
-# PHASE 6: Verification
+# PHASE 6: Policy Clone and Install
+# Users can modify which policy is cloned and installed. If so, be sure to consistently change the other appliance types as well.
+puts "\[INFO\] Cloning default policy template..."
+if { [catch {
+    send -- "grdapi clone_policy policyDesc=\"Default - Ignore Data Activity for Unknown Connections \[template\]\" clonedPolicyDesc=\"Default - Ignore data Activity for Unknown Connections\"\r"
+    wait_for_prompt
+} err] } {
+    puts "\[WARN\] clone_policy failed: $err - continuing."
+}
+
+puts "\[INFO\] Installing default policy..."
+if { [catch {
+    send -- "grdapi policy_install policy=\"Default - Ignore Data Activity for Unknown Connections\"\r"
+    wait_for_prompt
+} err] } {
+    puts "\[WARN\] policy_install failed: $err - continuing."
+}
+
+# PHASE 7: Verification
 set verify_commands {
     "show network interface all"
     "show network routes defaultroute"
@@ -291,7 +309,7 @@ foreach command $verify_commands {
     wait_for_prompt
 }
 
-# PHASE 7: Configure Archive
+# PHASE 8: Configure Archive
 # NOTE: This phase is disabled by default (if { 0 }).
 # To enable it, change "if { 0 }" to "if { 1 }" and edit the configuration command to your requirements.
 if { 0 } {
