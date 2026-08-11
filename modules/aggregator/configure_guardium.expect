@@ -377,6 +377,8 @@ if { 0 } {
 # User can edit this if statemtn to change which aggregator will be used.
 if { $HOSTNAME eq "${INSTANCE_NAME_PREFIX}-01" } {
     if { $CENTRAL_MANAGER ne "" } {
+        puts "\[INFO\] Waiting 60s for Central Manager to complete post-registration processing..."
+        sleep 60
         puts "\[INFO\] $HOSTNAME is the first aggregator — setting as CM backup target on $CENTRAL_MANAGER."
         spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CM_PUBLIC_DNS
         expect {
