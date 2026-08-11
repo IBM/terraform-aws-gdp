@@ -238,6 +238,9 @@ expect {
     }
 }
 
+# Save the aggregator's spawn_id so CM sessions don't displace it
+set agg_spawn_id $spawn_id
+
 # PHASE 3: Shared Secret Configuration
 if { $SHARED_SECRET ne "" } {
     puts "\[INFO\] Setting shared secret for Central Manager registration."
@@ -391,6 +394,8 @@ if { $HOSTNAME eq "${INSTANCE_NAME_PREFIX}-01" } {
             eof {}
             timeout { puts "\[WARN\] Timeout on quit from Central Manager." }
         }
+        # Restore aggregator session after CM interaction
+        set spawn_id $agg_spawn_id
     }
 }
 
@@ -398,7 +403,7 @@ if { $HOSTNAME eq "${INSTANCE_NAME_PREFIX}-01" } {
 # Users can modify which policy is installed. If so, be sure to consistently change the other appliance types as well.
 if { $CENTRAL_MANAGER ne "" } {
     puts "\[INFO\] Installing policy on Central Manager for $HOSTNAME ($PRIVATE_IP)..."
-    spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CM_PUBLIC_DNS
+    set cm_spawn_id [spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CM_PUBLIC_DNS]
     expect {
         -nocase {System is now operational in CLI regular mode} { exp_continue }
         -re $prompt_pattern {}
@@ -423,7 +428,8 @@ if { $CENTRAL_MANAGER ne "" } {
     }
 }
 
-# Exit
+# Exit — restore aggregator session before quitting
+set spawn_id $agg_spawn_id
 send "quit\r"
 expect {
     -timeout 10
