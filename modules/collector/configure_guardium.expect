@@ -24,8 +24,8 @@ proc wait_for_prompt {} {
 }
 
 # Argument validation
-if {$argc != 15} {
-    puts "\[ERROR\] Expected 15 arguments, got $argc\nArgs: $argv"
+if {$argc != 16} {
+    puts "\[ERROR\] Expected 16 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
@@ -45,6 +45,7 @@ set CENTRAL_MANAGER   [lindex $argv 11]
 set LICENSE_BASE      [lindex $argv 12]
 set LICENSE_APPEND    [lindex $argv 13]
 set AGG_HOST          [lindex $argv 14]
+set CM_PUBLIC_DNS     [lindex $argv 15]
 
 # Determine connection target (prefer public IP)
 if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
@@ -356,7 +357,7 @@ if { $AGG_HOST ne "" } {
 # Users can modify which policy is installed. If so, be sure to consistently change the other appliance types as well.
 if { $CENTRAL_MANAGER ne "" } {
     puts "\[INFO\] Installing policy on Central Manager for $HOSTNAME ($PRIVATE_IP)..."
-    spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CENTRAL_MANAGER
+    spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CM_PUBLIC_DNS
     expect {
         -nocase {System is now operational in CLI regular mode} { exp_continue }
         -re $prompt_pattern {}
@@ -370,11 +371,14 @@ if { $CENTRAL_MANAGER ne "" } {
     } err] } {
         puts "\[WARN\] policy_install failed: $err - continuing."
     }
-    send "quit\r"
-    expect {
-        -timeout 10
-        eof {}
-        timeout { puts "\[WARN\] Timeout on quit from Central Manager." }
+    if { [catch { send "quit\r" } err] } {
+        puts "\[WARN\] Could not send quit to Central Manager: $err - continuing."
+    } else {
+        expect {
+            -timeout 10
+            eof {}
+            timeout { puts "\[WARN\] Timeout on quit from Central Manager." }
+        }
     }
 }
 

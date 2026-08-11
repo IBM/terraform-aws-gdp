@@ -158,7 +158,8 @@ module "guardium_aggregator" {
   domain              = var.domain
   timezone            = var.timezone
   shared_secret       = var.shared_secret
-  central_manager_ip  = var.central_manager_ip
+  central_manager_ip         = var.central_manager_ip
+  central_manager_public_dns = var.central_manager_public_dns
   license_base        = var.license_base
   license_append      = var.license_append
   user_data           = local.user_data
