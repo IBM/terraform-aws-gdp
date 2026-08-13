@@ -289,6 +289,10 @@ if { $CENTRAL_MANAGER ne "" } {
             -nocase "Successfully registered" {
                 set reg_success 1
             }
+            -nocase "Unit is already managed" {
+                puts "\[INFO\] Unit is already managed by the Central Manager - treating as success."
+                set reg_success 1
+            }
             -nocase "Could not register" {
                 puts "\[WARN\] Registration attempt $reg_attempt failed: CM rejected the request."
             }
