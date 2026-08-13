@@ -188,6 +188,12 @@ variable "existing_guardium_collector_sg_id" {
 # Data Export / Aggregator Assignment
 # =====================================================
 
+variable "data_export_cron_string" {
+  description = "Cron expression (Quartz format) for the DataExport scheduled job. Do not include surrounding quotes."
+  type        = string
+  default     = "0 0 2 * * ? *"
+}
+
 variable "number_collectors_per_aggregator" {
   description = "Number of collectors to assign to each aggregator."
   type        = number

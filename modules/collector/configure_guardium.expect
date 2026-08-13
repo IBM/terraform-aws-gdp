@@ -24,28 +24,29 @@ proc wait_for_prompt {} {
 }
 
 # Argument validation
-if {$argc != 16} {
-    puts "\[ERROR\] Expected 16 arguments, got $argc\nArgs: $argv"
+if {$argc != 17} {
+    puts "\[ERROR\] Expected 17 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
 # Arguments from Terraform
-set HOSTNAME          [lindex $argv 0]
-set PRIVATE_IP        [lindex $argv 1]
-set PUBLIC_DNS        [lindex $argv 2]
-set PEM_FILE          [lindex $argv 3]
-set SUBNET_PREFIX     [lindex $argv 4]
-set GATEWAY           [lindex $argv 5]
-set RESOLVER1         [lindex $argv 6]
-set DOMAIN            [lindex $argv 7]
-set RESOLVER2         [lindex $argv 8]
-set TIMEZONE          [lindex $argv 9]
-set SHARED_SECRET     [lindex $argv 10]
-set CENTRAL_MANAGER   [lindex $argv 11]
-set LICENSE_BASE      [lindex $argv 12]
-set LICENSE_APPEND    [lindex $argv 13]
-set AGG_HOST          [lindex $argv 14]
-set CM_PUBLIC_DNS     [lindex $argv 15]
+set HOSTNAME                  [lindex $argv 0]
+set PRIVATE_IP                [lindex $argv 1]
+set PUBLIC_DNS                [lindex $argv 2]
+set PEM_FILE                  [lindex $argv 3]
+set SUBNET_PREFIX             [lindex $argv 4]
+set GATEWAY                   [lindex $argv 5]
+set RESOLVER1                 [lindex $argv 6]
+set DOMAIN                    [lindex $argv 7]
+set RESOLVER2                 [lindex $argv 8]
+set TIMEZONE                  [lindex $argv 9]
+set SHARED_SECRET             [lindex $argv 10]
+set CENTRAL_MANAGER           [lindex $argv 11]
+set LICENSE_BASE              [lindex $argv 12]
+set LICENSE_APPEND            [lindex $argv 13]
+set AGG_HOST                  [lindex $argv 14]
+set CM_PUBLIC_DNS             [lindex $argv 15]
+set DATA_EXPORT_CRON_STRING   [lindex $argv 16]
 
 # Determine connection target (prefer public IP)
 if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
@@ -349,7 +350,7 @@ foreach command $verify_commands {
 if { $AGG_HOST ne "" } {
     send "grdapi configure_export aggHost=$AGG_HOST exportOlderThan=1 exportValues=1 ignoreOlderThan=2\r"
     wait_for_prompt
-    send "grdapi schedule_job jobType=DataExport cronString=\"0 0 2 * * ? *\"\r"
+    send "grdapi schedule_job jobType=DataExport cronString=\"$DATA_EXPORT_CRON_STRING\"\r"
     wait_for_prompt
 }
 

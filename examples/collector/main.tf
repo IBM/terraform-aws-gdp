@@ -164,6 +164,9 @@ module "guardium_collector" {
   tags                = var.tags
   assign_public_ip    = var.assign_public_ip
 
+  # Data export
+  data_export_cron_string           = var.data_export_cron_string
+
   # Aggregator assignment
   number_collectors_per_aggregator  = var.number_collectors_per_aggregator
   aggregator_name_prefix            = var.aggregator_name_prefix

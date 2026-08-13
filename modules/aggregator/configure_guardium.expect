@@ -24,8 +24,8 @@ proc wait_for_prompt {} {
 }
 
 # Argument validation
-if {$argc != 16} {
-    puts "\[ERROR\] Expected 16 arguments, got $argc\nArgs: $argv"
+if {$argc != 17} {
+    puts "\[ERROR\] Expected 17 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
@@ -44,8 +44,9 @@ set SHARED_SECRET         [lindex $argv 10]
 set CENTRAL_MANAGER       [lindex $argv 11]
 set LICENSE_BASE          [lindex $argv 12]
 set LICENSE_APPEND        [lindex $argv 13]
-set INSTANCE_NAME_PREFIX  [lindex $argv 14]
-set CM_PUBLIC_DNS         [lindex $argv 15]
+set INSTANCE_NAME_PREFIX      [lindex $argv 14]
+set CM_PUBLIC_DNS             [lindex $argv 15]
+set DATA_IMPORT_CRON_STRING   [lindex $argv 16]
 
 # Determine connection target (prefer public IP)
 if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
@@ -359,7 +360,7 @@ foreach command $verify_commands {
 }
 
 # PHASE 6: Set up data import
-send "grdapi schedule_job jobType=DataImport cronString=\"0 0 4 * * ? *\"\r"
+send "grdapi schedule_job jobType=DataImport cronString=\"$DATA_IMPORT_CRON_STRING\"\r"
 wait_for_prompt
 
 # PHASE 7: Configure Archive and Purge

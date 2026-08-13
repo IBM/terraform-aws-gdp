@@ -138,6 +138,10 @@ tags = {
 # Data Export / Aggregator Assignment
 # =====================================================
 
+# Cron expression (Quartz format) for the DataExport scheduled job.
+# Surrounding quotes are added automatically; do not include them here.
+data_export_cron_string = "0 0 2 * * ? *"
+
 # Number of collectors to assign to each aggregator.
 number_collectors_per_aggregator = 2
 

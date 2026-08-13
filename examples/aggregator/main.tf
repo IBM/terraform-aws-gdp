@@ -166,6 +166,8 @@ module "guardium_aggregator" {
   tags                = var.tags
   assign_public_ip    = var.assign_public_ip
 
+  data_import_cron_string = var.data_import_cron_string
+
   # Instance naming and root volume configuration
   instance_name_prefix              = var.instance_name_prefix
   root_volume_size                  = var.root_volume_size

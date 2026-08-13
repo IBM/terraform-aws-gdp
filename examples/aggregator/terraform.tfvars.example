@@ -135,6 +135,14 @@ tags = {
 }
 
 # =====================================================
+# Data Import
+# =====================================================
+
+# Cron expression (Quartz format) for the DataImport scheduled job.
+# Surrounding quotes are added automatically; do not include them here.
+data_import_cron_string = "0 0 4 * * ? *"
+
+# =====================================================
 # Instance Naming and Storage (optional)
 # =====================================================
 
