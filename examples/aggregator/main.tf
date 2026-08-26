@@ -138,7 +138,7 @@ resource "aws_security_group" "guardium_agg_sg" {
   })
 }
 
-# When using an existing SG, ensure port 22 (SSH) exists for allowed_cidrs.
+# When using an existing SG, ensure all Guardium ports exist for allowed_cidrs.
 locals {
   agg_using_existing_sg = (
     var.existing_guardium_aggregator_sg_id != "" ? true :
@@ -148,18 +148,41 @@ locals {
     var.existing_guardium_aggregator_sg_id != "" ? var.existing_guardium_aggregator_sg_id :
     try(data.aws_security_groups.guardium_agg_existing[0].ids[0], null)
   )
+
+  agg_guardium_ports = [
+    { port = 22,   desc = "SSH access" },
+    { port = 8443, desc = "Guardium Web Console" },
+    { port = 3306, desc = "Database communications" },
+    { port = 8447, desc = "Guardium patch/upgrade" },
+    { port = 9983, desc = "Guardium replication/aggregation" },
+    { port = 8445, desc = "Application usage and administration" },
+    { port = 8983, desc = "Solr / indexing service" },
+  ]
+
+  agg_sg_rules = local.agg_using_existing_sg && local.agg_existing_sg_id != null ? {
+    for pair in flatten([
+      for p in local.agg_guardium_ports : [
+        for cidr in concat(var.allowed_cidrs, var.custom_allowed_cidrs) : {
+          key  = "${p.port}-${cidr}"
+          port = p.port
+          desc = p.desc
+          cidr = cidr
+        }
+      ]
+    ]) : pair.key => pair
+  } : {}
 }
 
-resource "aws_security_group_rule" "guardium_agg_ssh_allowed_cidrs" {
-  for_each = local.agg_using_existing_sg && local.agg_existing_sg_id != null ? toset(var.allowed_cidrs) : toset([])
+resource "aws_security_group_rule" "guardium_agg_allowed_cidrs" {
+  for_each = local.agg_sg_rules
 
   security_group_id = local.agg_existing_sg_id
   type              = "ingress"
-  from_port         = 22
-  to_port           = 22
+  from_port         = each.value.port
+  to_port           = each.value.port
   protocol          = "tcp"
-  cidr_blocks       = [each.value]
-  description       = "SSH access (from allowed_cidrs)"
+  cidr_blocks       = [each.value.cidr]
+  description       = each.value.desc
 }
 
 # =====================================================
