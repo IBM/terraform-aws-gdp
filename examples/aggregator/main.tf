@@ -181,12 +181,15 @@ module "guardium_aggregator" {
   domain              = var.domain
   timezone            = var.timezone
   shared_secret       = var.shared_secret
-  central_manager_ip  = var.central_manager_ip
+  central_manager_ip         = var.central_manager_ip
+  central_manager_public_dns = var.central_manager_public_dns
   license_base        = var.license_base
   license_append      = var.license_append
   user_data           = local.user_data
   tags                = var.tags
   assign_public_ip    = var.assign_public_ip
+
+  data_import_cron_string = var.data_import_cron_string
 
   # Instance naming and root volume configuration
   instance_name_prefix              = var.instance_name_prefix

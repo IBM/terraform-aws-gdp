@@ -15,13 +15,13 @@
 # =====================================================
 
 # AWS region where GDP is to be created.
-region = "us-east-1"
+region = ""
 
 # ID of the VPC that GDP will be created in.
-vpc_id = "vpc-0b88123d60e712fe2"
+vpc_id = ""
 
 # Subnet that GDP will be created in.
-subnet_id = "subnet-0c82066180e40df72"
+subnet_id = ""
 
 # =====================================================
 # Guardium Central Manager Deployment
@@ -32,20 +32,20 @@ subnet_id = "subnet-0c82066180e40df72"
 ami_type = "legacy"
 
 # AMI image to be used for the GDP machine.
-central_manager_ami_id = "ami-0955ca4c9f731cc20"
+central_manager_ami_id = ""
 
 # AWS instance type to be used for the GDP machine.
-central_manager_instance_type = "m6i.2xlarge"
+central_manager_instance_type = ""
 
 # =====================================================
 # SSH Access
 # =====================================================
 
 # Name of the key pair used to access GDP on AWS
-key_name = "my_rsa_key"
+key_name = ""
 
 # Path on the computer running this process to the PEM file
-pem_file_path = "/home/my-user/.ssh/my_rsa_key.pem"
+pem_file_path = ""
 
 # =====================================================
 # Security Group CIDRs
@@ -53,13 +53,11 @@ pem_file_path = "/home/my-user/.ssh/my_rsa_key.pem"
 
 # IP addresses that can access the GDP machine.
 allowed_cidrs = [
-  "10.0.0.0/16",
-  "170.225.223.17/32"
+  "10.0.0.0/16"
 ]
 
 # Optional custom admin IPs
 custom_allowed_cidrs = [
-  "129.41.47.4/32"
 ]
 
 # =====================================================
@@ -74,11 +72,7 @@ assign_public_ip = false
 # Cloud-Init (optional)
 # =====================================================
 
-# Path to Cloud-Init user-data file (e.g., #cloud-config). Relative to examples/central-manager.
-# Leave empty to omit. Cloud-Init runs at first boot; Terraform then waits and runs configuration.
-#
-# For unified AMIs: The module automatically injects 'aggregator: true' and 'license_accepted: true'.
-# Your custom config is safely merged without overriding critical fields.
+# Path to Cloud-Init user-data file
 user_data_file = "./user-data.yaml"
 
 # =====================================================
@@ -86,7 +80,7 @@ user_data_file = "./user-data.yaml"
 # =====================================================
 
 # Shared secret that Aggregators and Collectors will use to register with this Central Manager
-shared_secret = "guard"
+shared_secret = ""
 
 # =====================================================
 # GDP License Keys (optional)
@@ -97,6 +91,13 @@ license_base = ""
 
 # Append Trial License. Leave empty to skip automated license installation.
 license_append = ""
+
+# =====================================================
+# Instance Naming
+# =====================================================
+
+# Prefix for instance name tag. Instance number will be appended (e.g., guard-cm-01)
+instance_name_prefix = "guard-cm"
 
 # =====================================================
 # GDP Configuration
@@ -121,11 +122,8 @@ tags = {
 }
 
 # =====================================================
-# Instance Naming and Storage (optional)
+# Storage (optional)
 # =====================================================
-
-# Prefix for instance name tag. Instance number will be appended (e.g., guard-cm-01)
-# instance_name_prefix = "guard-cm"
 
 # Size of the root EBS volume in GB (minimum 1500 GB for Central Manager)
 # root_volume_size = 1500
@@ -139,6 +137,7 @@ tags = {
 # =====================================================
 # Existing Security Groups (optional)
 # =====================================================
+
 # Leave empty to auto-create a new SG or detect existing "guardium-cm-sg"
 existing_guardium_cm_sg_id         = ""
 existing_guardium_aggregator_sg_id = ""

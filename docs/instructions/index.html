@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deploying GDP on AWS — Runbook</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <header class="site-header">
+    <div class="breadcrumb">IBM Guardium Data Protection</div>
+    <h1>Deploying GDP on AWS</h1>
+    <p class="subtitle">A step-by-step runbook for provisioning GDP appliances on AWS using Terraform.</p>
+  </header>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>An AWS account with permission to create EC2 instances, security groups, and key pairs</li>
+    <li>An AWS Access Key ID and Secret Access Key</li>
+    <li>GDP AMI images available in your AWS region</li>
+    <li>GDP license keys (base and append) for the Central Manager</li>
+  </ul>
+
+  <h2>Target audience</h2>
+  <p>These instructions assume you are comfortable working at a Linux command line and have some familiarity with GDP, but do not require deep Terraform expertise.</p>
+
+  <h2>Choose your path</h2>
+
+  <div class="path-grid">
+
+    <div class="path-card path-ibm">
+      <div class="path-label">IBM employees</div>
+      <p>You will provision a Linux VM on IBM Fyre to use as your Terraform host.</p>
+      <ul class="step-list">
+        <li>
+          <div><span class="step-num">1</span><a href="step01.html">Set up Linux</a></div>
+          <div class="desc">Create a Fyre VM, set up a user, configure GitHub SSH access, and clone the Terraform repository.</div>
+        </li>
+        <li>
+          <div><span class="step-num">2</span><a href="step03.html">Install required software</a></div>
+          <div class="desc">Install Terraform, expect, PowerShell, and the AWS CLI; create an AWS key pair; note your IP addresses.</div>
+        </li>
+        <li>
+          <div><span class="step-num">3</span><a href="step04.html">Deploy and connect to the Central Manager</a></div>
+          <div class="desc">Configure <code>terraform.tfvars</code>, run <code>terraform apply</code> to provision the Central Manager, then connect to it.</div>
+        </li>
+        <li>
+          <div><span class="step-num">4</span><a href="step06.html">Deploy the Aggregators</a></div>
+          <div class="desc">Configure <code>terraform.tfvars</code> and run <code>terraform apply</code> to provision the Aggregator instances.</div>
+        </li>
+        <li>
+          <div><span class="step-num">5</span><a href="step07.html">Deploy the Collectors</a></div>
+          <div class="desc">Configure <code>terraform.tfvars</code> and run <code>terraform apply</code> to provision the Collector instances.</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="path-card path-customer">
+      <div class="path-label">Customers</div>
+      <p>You will use your own Linux machine as the Terraform host, with all required software already installed.</p>
+      <ul class="step-list">
+        <li>
+          <div><span class="step-num">1</span><a href="step04.html">Deploy and connect to the Central Manager</a></div>
+          <div class="desc">Configure <code>terraform.tfvars</code>, run <code>terraform apply</code> to provision the Central Manager, then open inbound rules on the security group and access the GDP web console and CLI.</div>
+        </li>
+        <li>
+          <div><span class="step-num">2</span><a href="step06.html">Deploy the Aggregators</a></div>
+          <div class="desc">Configure <code>terraform.tfvars</code> and run <code>terraform apply</code> to provision the Aggregator instances.</div>
+        </li>
+        <li>
+          <div><span class="step-num">3</span><a href="step07.html">Deploy the Collectors</a></div>
+          <div class="desc">Configure <code>terraform.tfvars</code> and run <code>terraform apply</code> to provision the Collector instances.</div>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
+  <h2>Repository</h2>
+  <p>The Terraform scripts used in this runbook are available at
+    <a href="https://github.com/IBM/terraform-aws-gdp">github.com/IBM/terraform-aws-gdp</a>.
+  </p>
+
+</div>
+<footer>Made with IBM Bob</footer>
+</body>
+</html>

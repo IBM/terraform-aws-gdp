@@ -24,26 +24,29 @@ proc wait_for_prompt {} {
 }
 
 # Argument validation
-if {$argc != 14} {
-    puts "\[ERROR\] Expected 14 arguments, got $argc\nArgs: $argv"
+if {$argc != 17} {
+    puts "\[ERROR\] Expected 17 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
 # Arguments from Terraform
-set HOSTNAME          [lindex $argv 0]
-set PRIVATE_IP        [lindex $argv 1]
-set PUBLIC_DNS        [lindex $argv 2]
-set PEM_FILE          [lindex $argv 3]
-set SUBNET_PREFIX     [lindex $argv 4]
-set GATEWAY           [lindex $argv 5]
-set RESOLVER1         [lindex $argv 6]
-set DOMAIN            [lindex $argv 7]
-set RESOLVER2         [lindex $argv 8]
-set TIMEZONE          [lindex $argv 9]
-set SHARED_SECRET     [lindex $argv 10]
-set CENTRAL_MANAGER   [lindex $argv 11]
-set LICENSE_BASE      [lindex $argv 12]
-set LICENSE_APPEND    [lindex $argv 13]
+set HOSTNAME              [lindex $argv 0]
+set PRIVATE_IP            [lindex $argv 1]
+set PUBLIC_DNS            [lindex $argv 2]
+set PEM_FILE              [lindex $argv 3]
+set SUBNET_PREFIX         [lindex $argv 4]
+set GATEWAY               [lindex $argv 5]
+set RESOLVER1             [lindex $argv 6]
+set DOMAIN                [lindex $argv 7]
+set RESOLVER2             [lindex $argv 8]
+set TIMEZONE              [lindex $argv 9]
+set SHARED_SECRET         [lindex $argv 10]
+set CENTRAL_MANAGER       [lindex $argv 11]
+set LICENSE_BASE          [lindex $argv 12]
+set LICENSE_APPEND        [lindex $argv 13]
+set INSTANCE_NAME_PREFIX      [lindex $argv 14]
+set CM_PUBLIC_DNS             [lindex $argv 15]
+set DATA_IMPORT_CRON_STRING   [lindex $argv 16]
 
 # Determine connection target (prefer public IP)
 if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
@@ -236,6 +239,9 @@ expect {
     }
 }
 
+# Save the aggregator's spawn_id so CM sessions don't displace it
+set agg_spawn_id $spawn_id
+
 # PHASE 3: Shared Secret Configuration
 if { $SHARED_SECRET ne "" } {
     puts "\[INFO\] Setting shared secret for Central Manager registration."
@@ -357,7 +363,80 @@ foreach command $verify_commands {
     wait_for_prompt
 }
 
-# Exit
+# PHASE 6: Set up data import
+send "grdapi schedule_job jobType=DataImport cronString=\"$DATA_IMPORT_CRON_STRING\"\r"
+wait_for_prompt
+
+# PHASE 7: Configure Archive and Purge
+# NOTE: This phase is disabled by default (if { 0 }).
+# To enable it, change "if { 0 }" to "if { 1 }" and edit the configuration command to your requirements.
+if { 0 } {
+    puts "\[INFO\] Configuring archive..."
+    send -- "grdapi configure_archive archiveOlderThan=1 archiveValues=1 destHost=10.10.10.10 ignoreOlderThan=30 protocol=SFTP targetDir=/archive/dir userName=root passwd=1234\r"
+    wait_for_prompt
+    send -- "grdapi configure_purge purgeAtAge=30 purgeWithoutArchive=0\r"
+    wait_for_prompt
+}
+
+# PHASE 8: Set aggregator as CM backup target (first aggregator only)
+# User can edit this if statemtn to change which aggregator will be used.
+if { $HOSTNAME eq "${INSTANCE_NAME_PREFIX}-01" } {
+    if { $CENTRAL_MANAGER ne "" } {
+        puts "\[INFO\] Waiting 60s for Central Manager to complete post-registration processing..."
+        sleep 60
+        puts "\[INFO\] $HOSTNAME is the first aggregator — setting as CM backup target on $CENTRAL_MANAGER."
+        spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CM_PUBLIC_DNS
+        expect {
+            -nocase {System is now operational in CLI regular mode} { exp_continue }
+            -re $prompt_pattern {}
+            timeout {
+                puts "\[WARN\] Timeout connecting to Central Manager $CENTRAL_MANAGER — skipping backup_cm_set."
+            }
+        }
+        send -- "grdapi backup_cm_set ip=$PRIVATE_IP\r"
+        wait_for_prompt
+        send "quit\r"
+        expect {
+            -timeout 10
+            eof {}
+            timeout { puts "\[WARN\] Timeout on quit from Central Manager." }
+        }
+        # Restore aggregator session after CM interaction
+        set spawn_id $agg_spawn_id
+    }
+}
+
+# PHASE 9: Install policy on Central Manager for this unit
+# Users can modify which policy is installed. If so, be sure to consistently change the other appliance types as well.
+if { $CENTRAL_MANAGER ne "" } {
+    puts "\[INFO\] Installing policy on Central Manager for $HOSTNAME ($PRIVATE_IP)..."
+    set cm_spawn_id [spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CM_PUBLIC_DNS]
+    expect {
+        -nocase {System is now operational in CLI regular mode} { exp_continue }
+        -re $prompt_pattern {}
+        timeout {
+            puts "\[WARN\] Timeout connecting to Central Manager $CENTRAL_MANAGER — skipping policy_install."
+        }
+    }
+    if { [catch {
+        send -- "grdapi policy_install policy=\"Default - Ignore Data Activity for Unknown Connections\" api_target_host=\"$PRIVATE_IP\"\r"
+        wait_for_prompt
+    } err] } {
+        puts "\[WARN\] policy_install failed: $err - continuing."
+    }
+    if { [catch { send "quit\r" } err] } {
+        puts "\[WARN\] Could not send quit to Central Manager: $err - continuing."
+    } else {
+        expect {
+            -timeout 10
+            eof {}
+            timeout { puts "\[WARN\] Timeout on quit from Central Manager." }
+        }
+    }
+}
+
+# Exit — restore aggregator session before quitting
+set spawn_id $agg_spawn_id
 send "quit\r"
 expect {
     -timeout 10

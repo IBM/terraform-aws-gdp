@@ -86,7 +86,13 @@ variable "shared_secret" {
 }
 
 variable "central_manager_ip" {
-  description = "IP address of the Central Manager to register with."
+  description = "Private IP address of the Central Manager to register with."
+  type        = string
+  default     = ""
+}
+
+variable "central_manager_public_dns" {
+  description = "Public DNS (or IP) of the Central Manager, used to SSH to it from the Terraform machine."
   type        = string
   default     = ""
 }
@@ -232,3 +238,13 @@ variable "root_volume_delete_on_termination" {
   default     = true
 }
 
+
+# =====================================================
+# Data Import
+# =====================================================
+
+variable "data_import_cron_string" {
+  description = "Cron expression (Quartz format) for the DataImport scheduled job. Do not include surrounding quotes."
+  type        = string
+  default     = "0 0 4 * * ? *"
+}

@@ -1,0 +1,171 @@
+/* Shared stylesheet for GDP on AWS runbook */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #1f2328;
+  background: #ffffff;
+  margin: 0;
+  padding: 0;
+}
+
+.page-wrap {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* ── Header ── */
+.site-header {
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.75rem;
+  margin-bottom: 2rem;
+}
+.site-header .breadcrumb {
+  font-size: 0.85rem;
+  color: #57606a;
+  margin-bottom: 0.25rem;
+}
+.site-header .breadcrumb a { color: #3b82d4; text-decoration: none; }
+.site-header .breadcrumb a:hover { text-decoration: underline; }
+h1 { margin: 0 0 0.25rem; font-size: 1.6rem; font-weight: 700; }
+.subtitle { color: #57606a; margin: 0 0 0.5rem; font-size: 0.95rem; }
+
+/* ── Navigation ── */
+.step-nav {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+.step-nav a {
+  display: inline-block;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #3b82d4;
+  text-decoration: none;
+  background: #f7f8fa;
+}
+.step-nav a:hover { background: #e8f0fb; }
+.step-nav a.current {
+  background: #3b82d4;
+  color: #fff;
+  border-color: #3b82d4;
+}
+
+/* ── Section headings ── */
+h2 { font-size: 1.2rem; margin: 2rem 0 0.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.3rem; }
+h3 { font-size: 1rem; margin: 1.5rem 0 0.4rem; }
+
+/* ── Callouts ── */
+.callout {
+  border-left: 4px solid;
+  padding: 0.65rem 1rem;
+  margin: 1rem 0;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.93rem;
+}
+.callout-note   { border-color: #3b82d4; background: #eef4fd; }
+.callout-warn   { border-color: #d97706; background: #fef9ec; }
+.callout-tip    { border-color: #16a34a; background: #f0faf3; }
+.callout strong { display: block; margin-bottom: 0.2rem; }
+
+/* ── Code / commands ── */
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.88em;
+  background: #f7f8fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+}
+pre {
+  background: #f7f8fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 0.8rem 1rem;
+  overflow-x: auto;
+  font-size: 0.87em;
+  line-height: 1.5;
+  margin: 0.5rem 0 1rem;
+}
+pre code { background: none; border: none; padding: 0; }
+.prompt { color: #57606a; user-select: none; }
+
+/* ── Steps ── */
+ol.steps { padding-left: 1.3rem; }
+ol.steps > li { margin-bottom: 0.9rem; }
+ol.steps > li::marker { font-weight: 700; color: #3b82d4; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 0.75rem 0 1.25rem; font-size: 0.9rem; }
+th { background: #f7f8fa; text-align: left; padding: 0.45rem 0.75rem; border: 1px solid #e5e7eb; font-weight: 600; }
+td { padding: 0.4rem 0.75rem; border: 1px solid #e5e7eb; vertical-align: top; }
+tr:nth-child(even) td { background: #fafafa; }
+td.param { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; white-space: nowrap; }
+
+/* ── Index cards ── */
+.step-list { list-style: none; padding: 0; margin: 0; }
+.step-list li {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 0.75rem;
+  background: #f7f8fa;
+}
+.step-list li a { font-weight: 600; color: #3b82d4; text-decoration: none; font-size: 1rem; }
+.step-list li a:hover { text-decoration: underline; }
+.step-list li .desc { color: #57606a; font-size: 0.9rem; margin-top: 0.2rem; }
+.step-num { display: inline-block; background: #3b82d4; color: #fff; border-radius: 50%; width: 1.5rem; height: 1.5rem; text-align: center; line-height: 1.5rem; font-size: 0.8rem; font-weight: 700; margin-right: 0.5rem; }
+
+/* ── Incomplete banner ── */
+.incomplete-banner {
+  background: #fef9ec;
+  border: 1px solid #d97706;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.92rem;
+  color: #7c3b00;
+}
+
+/* ── Footer ── */
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #57606a;
+}
+
+/* ── Two-path grid (index page) ── */
+.path-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 1rem 0 2rem;
+}
+@media (max-width: 600px) {
+  .path-grid { grid-template-columns: 1fr; }
+}
+.path-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+.path-card p { margin: 0.4rem 0 0.9rem; font-size: 0.92rem; color: #57606a; }
+.path-label {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+.path-ibm   { border-color: #3b82d4; }
+.path-ibm   .path-label { color: #1a56b0; }
+.path-customer { border-color: #7c5cd8; }
+.path-customer .path-label { color: #5a3eb5; }

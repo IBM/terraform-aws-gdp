@@ -174,17 +174,25 @@ module "guardium_collector" {
   collector_instance_type = var.collector_instance_type
   ami_type                = var.ami_type
 
-  resolver1          = var.resolver1
-  resolver2          = var.resolver2
-  domain             = var.domain
-  timezone           = var.timezone
-  shared_secret      = var.shared_secret
-  central_manager_ip = var.central_manager_ip
-  license_base       = var.license_base
-  license_append     = var.license_append
-  user_data          = local.user_data
-  tags               = var.tags
-  assign_public_ip   = var.assign_public_ip
+  resolver1           = var.resolver1
+  resolver2           = var.resolver2
+  domain              = var.domain
+  timezone            = var.timezone
+  shared_secret       = var.shared_secret
+  central_manager_ip         = var.central_manager_ip
+  central_manager_public_dns = var.central_manager_public_dns
+  license_base        = var.license_base
+  license_append      = var.license_append
+  user_data           = local.user_data
+  tags                = var.tags
+  assign_public_ip    = var.assign_public_ip
+
+  # Data export
+  data_export_cron_string           = var.data_export_cron_string
+
+  # Aggregator assignment
+  number_collectors_per_aggregator  = var.number_collectors_per_aggregator
+  aggregator_name_prefix            = var.aggregator_name_prefix
 
   # Instance naming and root volume configuration
   instance_name_prefix              = var.instance_name_prefix

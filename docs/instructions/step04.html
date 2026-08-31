@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Step 4: Deploy and Connect to the Central Manager — GDP on AWS Runbook</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <header class="site-header">
+    <div class="breadcrumb"><a href="index.html">GDP on AWS Runbook</a> › Step 4</div>
+    <h1>Step 4: Deploy and Connect to the Central Manager</h1>
+    <p class="subtitle">Configure <code>terraform.tfvars</code>, run Terraform to provision the Central Manager, then connect to it.</p>
+  </header>
+
+  <nav class="step-nav">
+    <a href="index.html">Index</a>
+    <a href="step01.html">1 · Setup Linux</a>
+    <a href="step03.html">2 · Install software</a>
+    <a href="step04.html" class="current">3 · Deploy CM</a>
+    <a href="step06.html">4 · Deploy Aggregators</a>
+    <a href="step07.html">5 · Deploy Collectors</a>
+  </nav>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>All required software is installed.</li>
+    <li>You are logged into the Linux VM as your Terraform user, in your working directory.</li>
+    <li>You have the AWS Console open in a web browser.</li>
+  </ul>
+
+  <h2>Navigate to the example directory</h2>
+  <pre><code><span class="prompt">$ </span>cd terraform-aws-gdp/examples/central-manager/</code></pre>
+
+  <h2>Create the variables file</h2>
+  <p>
+    The repository includes a fully commented example file. Copy it to create your own
+    <code>terraform.tfvars</code>.
+  </p>
+  <pre><code><span class="prompt">$ </span>cp terraform.tfvars.example terraform.tfvars</code></pre>
+
+  <p>Open <code>terraform.tfvars</code> in a text editor and set each value as described
+  in the table below.</p>
+
+  <h2>Variable reference</h2>
+
+  <h3>Required variables</h3>
+  <table>
+    <thead>
+      <tr><th>Variable</th><th>Description</th><th>Example</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="param">region</td>
+        <td>
+          AWS region code where the Central Manager will be created.
+          In the AWS Console, click the region name in the top-right corner and note the
+          code from the drop-down list — use the code (e.g. <code>us-east-1</code>), not
+          the location name.
+        </td>
+        <td><code>us-east-1</code></td>
+      </tr>
+      <tr>
+        <td class="param">vpc_id</td>
+        <td>
+          ID of the VPC where the Central Manager will be created. In the AWS Console,
+          navigate to <strong>VPC &rsaquo; Your VPCs</strong> and note the VPC ID (not
+          the VPC name).
+        </td>
+        <td><code>vpc-0b88123d60e712fe2</code></td>
+      </tr>
+      <tr>
+        <td class="param">subnet_id</td>
+        <td>
+          ID of the subnet within the VPC. From the VPC Dashboard, click
+          <strong>Subnets</strong>, filter by your VPC, and note the Subnet ID (not
+          the subnet name).
+        </td>
+        <td><code>subnet-0c82066180e40df72</code></td>
+      </tr>
+      <tr>
+        <td class="param">ami_type</td>
+        <td>
+          Type of AMI being used. Use <code>legacy</code> for unit-type-specific AMIs
+          (one AMI per appliance type). Use <code>unified</code> for a single AMI that
+          can be configured as any appliance type.
+        </td>
+        <td><code>legacy</code></td>
+      </tr>
+      <tr>
+        <td class="param">central_manager_ami_id</td>
+        <td>
+          AMI ID of the Central Manager image. In the EC2 Dashboard, click
+          <strong>AMI Catalog &rsaquo; My AMIs</strong>, locate the Central Manager AMI
+          you want to use, and copy its AMI ID (not the name).
+        </td>
+        <td><code>ami-0f3ceaf1844a82568</code></td>
+      </tr>
+      <tr>
+        <td class="param">central_manager_instance_type</td>
+        <td>
+          AWS instance type for the Central Manager. In the EC2 Dashboard, click
+          <strong>Instance Types</strong> and note the type code.
+        </td>
+        <td><code>m6i.2xlarge</code></td>
+      </tr>
+      <tr>
+        <td class="param">key_name</td>
+        <td>
+          Name of the AWS key pair created in <a href="step03.html">Step 3</a>.
+          This is the filename of the <code>.pem</code> file without the extension.
+        </td>
+        <td><code>mykeyname</code></td>
+      </tr>
+      <tr>
+        <td class="param">pem_file_path</td>
+        <td>
+          Absolute path to the <code>.pem</code> file <strong>on the Linux VM</strong>.
+        </td>
+        <td><code>/home/eli/.ssh/mykeyname.pem</code></td>
+      </tr>
+      <tr>
+        <td class="param">allowed_cidrs</td>
+        <td>
+          List of CIDR blocks that are allowed to access the Central Manager.
+          Typically includes the VPC CIDR (so other appliances can communicate),
+          plus the IP addresses of your Linux VM and your computer (noted in
+          <a href="step03.html">Step 3</a>). Use <code>/32</code> for individual host IPs.
+        </td>
+        <td><pre><code>["10.0.0.0/16",
+ "170.225.223.16/32",
+ "147.236.177.70/32"]</code></pre></td>
+      </tr>
+      <tr>
+        <td class="param">custom_allowed_cidrs</td>
+        <td>
+          Additional CIDR blocks to allow (optional). Leave as an empty list if not
+          needed.
+        </td>
+        <td><code>[]</code></td>
+      </tr>
+      <tr>
+        <td class="param">instance_name_prefix</td>
+        <td>
+          Name prefix for the Central Manager instance. The instance number is appended
+          automatically (e.g. <code>guard-cm</code> produces <code>guard-cm-01</code>).
+        </td>
+        <td><code>guard-cm</code></td>
+      </tr>
+      <tr>
+        <td class="param">assign_public_ip</td>
+        <td>
+          Whether to assign a public IP address to the Central Manager. If you leave
+          this as <code>false</code>, you must use a bastion host for the deployment.
+          The instructions in these pages assume you are setting this value to
+          <code>true</code>.
+        </td>
+        <td><code>false</code></td>
+      </tr>
+      <tr>
+        <td class="param">user_data_file</td>
+        <td>
+          Path to the Cloud-Init user-data file, used for license handling. Do not
+          change this value.
+        </td>
+        <td><code>./user-data.yaml</code></td>
+      </tr>
+      <tr>
+        <td class="param">shared_secret</td>
+        <td>
+          A secret word used when Aggregators and Collectors register with this Central
+          Manager. Choose any value you want; you will need it again when deploying
+          managed units.
+        </td>
+        <td><code>guard</code></td>
+      </tr>
+      <tr>
+        <td class="param">license_base</td>
+        <td>
+          Base license for the Central Manager. Obtain this from your IBM Guardium
+          administrator. Leave empty to skip automated license installation.
+        </td>
+        <td><em>(long encoded string — obtain from your administrator)</em></td>
+      </tr>
+      <tr>
+        <td class="param">license_append</td>
+        <td>
+          Append license for the Central Manager. Obtain this from your IBM Guardium
+          administrator. Leave empty to skip automated license installation.
+        </td>
+        <td><em>(long encoded string — obtain from your administrator)</em></td>
+      </tr>
+      <tr>
+        <td class="param">domain</td>
+        <td>
+          Domain name for the GDP appliance. This is site-specific.
+        </td>
+        <td><code>corp.mycompany.local</code></td>
+      </tr>
+      <tr>
+        <td class="param">timezone</td>
+        <td>
+          Timezone for the GDP appliance, in <a href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones">tz database</a> format.
+        </td>
+        <td><code>America/New_York</code></td>
+      </tr>
+      <tr>
+        <td class="param">resolver1<br>resolver2</td>
+        <td>
+          Primary and secondary DNS resolvers for the GDP appliance. These are
+          site-specific.
+        </td>
+        <td><code>8.8.4.4</code><br><code>1.1.1.1</code></td>
+      </tr>
+      <tr>
+        <td class="param">tags</td>
+        <td>
+          A map of AWS tags to apply to the created resources. These are
+          site-specific and used for cost tracking and organisation.
+        </td>
+        <td><pre><code>{
+  Environment = "dev"
+  Project     = "GuardiumGDP"
+  Owner       = "you@example.com"
+  Role        = "CentralManager"
+}</code></pre></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Optional: existing security groups</h3>
+  <p>
+    If you want to reuse existing AWS security groups rather than having Terraform create new
+    ones, you can provide their IDs here. Leave all three empty if you want Terraform to manage
+    security groups automatically.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Variable</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="param">existing_guardium_cm_sg_id</td>
+        <td>Security group to use for the Central Manager. Leave empty to auto-create.</td>
+      </tr>
+      <tr>
+        <td class="param">existing_guardium_aggregator_sg_id</td>
+        <td>Security group for Aggregators. Leave empty to auto-create.</td>
+      </tr>
+      <tr>
+        <td class="param">existing_guardium_collector_sg_id</td>
+        <td>Security group for Collectors. Leave empty to auto-create.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Optional: instance naming and storage</h3>
+  <p>
+    These variables are commented out in <code>terraform.tfvars.example</code> by default.
+    Uncomment and set them if you need to override the defaults.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Variable</th><th>Description</th><th>Default</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="param">instance_name_prefix</td>
+        <td>
+          Prefix for the instance name tag. The instance number is appended automatically
+          (e.g. <code>guard-cm</code> produces <code>guard-cm-01</code>).
+        </td>
+        <td><code>guard-cm</code></td>
+      </tr>
+      <tr>
+        <td class="param">root_volume_size</td>
+        <td>Size of the root EBS volume in GB. Minimum 1500 GB for a Central Manager.</td>
+        <td><code>1500</code></td>
+      </tr>
+      <tr>
+        <td class="param">root_volume_type</td>
+        <td>EBS volume type.</td>
+        <td><code>gp3</code></td>
+      </tr>
+      <tr>
+        <td class="param">root_volume_delete_on_termination</td>
+        <td>Whether the root volume is deleted when the instance is terminated.</td>
+        <td><code>true</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Run Terraform</h2>
+  <p>Once you have finished editing and saved <code>terraform.tfvars</code>, run the following commands.</p>
+  <pre><code><span class="prompt">$ </span>terraform init -reconfigure
+<span class="prompt">$ </span>terraform plan
+<span class="prompt">$ </span>terraform apply -auto-approve</code></pre>
+
+  <p>
+    The plan will be displayed. The script will take several minutes to complete.
+  </p>
+
+  <div class="callout callout-warn">
+    <strong>If there are errors</strong>
+    Stop, fix the issue, and run <code>terraform apply</code> again. Do not proceed to the
+    next step with a failed deployment.
+  </div>
+
+  <p>
+    When the script finishes successfully it prints details about the provisioned instance,
+    including the security group ID and both internal and external IP addresses.
+    <strong>Record these values</strong> — you will need them below.
+  </p>
+
+  <h2>Connect to the Central Manager</h2>
+  <p class="subtitle">Access the GDP web console and CLI of the Central Manager you just created.</p>
+
+  <h3>Connecting in a web browser</h3>
+  <p>
+    To connect to the Central Manager in a web browser, type the following URL in the address bar,
+    replacing <code>ip-address</code> with the public IP address of the Central Manager instance.
+    To find the public IP address, either look at the output from the Terraform run, or find the
+    instance in the AWS Console.
+  </p>
+  <pre><code>https://ip-address:8443</code></pre>
+
+  <p>Log in using:</p>
+  <ul>
+    <li><strong>User:</strong> <code>admin</code></li>
+    <li><strong>Password:</strong> the instance ID of the CM instance (from the AWS Console)</li>
+  </ul>
+  <p>You will be prompted to change the password.</p>
+
+  <h3>Connecting via SSH</h3>
+  <p>
+    To connect to the CLI user of the Central Manager via SSH, use the following command from your computer.
+    Replace <code>path-to-pem-file</code> with the path to the <code>.pem</code> file you saved from AWS,
+    and replace <code>ip-address</code> with the public IP address of the Central Manager.
+  </p>
+  <pre><code><span class="prompt">% </span>ssh -i [path-to-pem-file] cli@[ip-address]</code></pre>
+
+  <h3>Handle failed connections</h3>
+  <p>
+    If the connection does not work, this is probably because you did not enter your computer's IP
+    address in the <code>allowed_cidrs</code> entry of <code>terraform.tfvars</code> earlier, or your
+    computer's IP address has changed since then. You will need to add your computer's IP address to
+    the inbound rules of the Central Manager's security group in the AWS Console.
+  </p>
+  <ol class="steps">
+    <li>
+      Find the Central Manager instance in the AWS Console. Navigate to its
+      <strong>Security</strong> tab and click on the security group.
+    </li>
+    <li>
+      On the security group page, click <strong>Edit inbound rules</strong> and add the
+      following two rules:
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Port range</th><th>Source</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Custom TCP</td>
+            <td>8443</td>
+            <td>Enter your computer's IP address, or choose <strong>My IP</strong></td>
+          </tr>
+          <tr>
+            <td>SSH</td>
+            <td>22</td>
+            <td>Enter your computer's IP address, or choose <strong>My IP</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </li>
+    <li>Click <strong>Save rules</strong>. You should now be able to connect to the Central Manager.</li>
+  </ol>
+
+  <div class="callout callout-tip">
+    <strong>Next step</strong>
+    Proceed to <a href="step06.html">Step 5: Deploy the Aggregators</a>.
+  </div>
+
+</div>
+<footer>Made with IBM Bob</footer>
+</body>
+</html>

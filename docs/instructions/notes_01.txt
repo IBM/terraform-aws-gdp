@@ -1,0 +1,180 @@
+Testing instructions from first step
+
+Linux IP: 170.225.223.19
+
+Max IP: 129.41.47.1
+
+When installing AWS client, used this info:
+
+Created AWS pem key: key135.pem
+
+Values changed in terraform.tfvars for CM:
+
+region = "us-east-1"
+
+vpc_id = vpc-0b88123d60e712fe2
+
+subnet_id = subnet-0c82066180e40df72
+
+central_manager_ami_id = ami-0f3ceaf1844a82568
+
+central_manager_instance_type = "m6i.2xlarge"
+
+key_name = key135
+
+pem_file_path = /home/eli/.ssh/key135.pem
+
+allowed_cidrs =
+[
+  "10.0.0.0/16",
+  "170.225.223.19/32",
+  "129.41.47.1/32"
+]
+
+assign_public_id = true
+
+shared_secret = "guard"
+
+licence_base = W1tjODU3OGU1MjRkYWRjOTE2NThhNGNiYWMwNWFjNGQ4MF1df3t/bn8bAAAAAAAAAAAAACw5OTk5LCUsRzUwMDAgICAgICwtMSwtMSwwLDIwOTktMDEtMDEgMDA6MDA6MDAsMSwAACxMLVRFU1gtOVZCVUc2
+
+licence_append = W1szYTVjMjg3NDQxYWZhMjdlMzFjYmFmMTQ0ODY3OTcxNl1dAAAAAAAEAAAAAAAAAAAAACwxLCUsRzUwMDAgICAgICwtMSwtMSwwLDIwOTktMDEtMDEgMDA6MDA6MDAsMCwEACxMLVRFU1gtOVZCVUNS
+
+instance_name_prefix = test135-cm
+
+===============
+Change to instructions (step 3):
+
+Add a paragraph instructing the user that a default policy will be installed on the CM, and the user can change which policy by editing modules/central-manager/configure_guardium.expect.
+===============
+
+Connected and checked license and policy.
+
+===============
+Change to instructions (step 4):
+
+Don't mentions whether or not assign_public_ip = true. Let's just assume it is, and write the instructions as such, which they already are. Later, I might add instructions for what to do if it is false, but we'll deal with that later.
+===============
+
+
+Values changed in terraform.tfvars for agg:
+
+region = "us-east-1"
+
+vpc_id = vpc-0b88123d60e712fe2
+
+subnet_id = subnet-0c82066180e40df72
+
+aggregator_ami_id = ami-0f3ceaf1844a82568
+
+aggregator_instance_type = "m6i.2xlarge"
+
+aggregator_count = 2
+
+key_name = key135
+
+pem_file_path = /home/eli/.ssh/key135.pem
+
+allowed_cidrs =
+[
+  "10.0.0.0/16",
+  "170.225.223.19/32",
+  "129.41.47.1/32"
+]
+
+assign_public_id = true
+
+shared_secret = "guard"
+
+central_manager_ip = "10.0.12.232"
+
+central_manager_public_dns = "44.198.175.80"
+
+licence_base = W1tjODU3OGU1MjRkYWRjOTE2NThhNGNiYWMwNWFjNGQ4MF1df3t/bn8bAAAAAAAAAAAAACw5OTk5LCUsRzUwMDAgICAgICwtMSwtMSwwLDIwOTktMDEtMDEgMDA6MDA6MDAsMSwAACxMLVRFU1gtOVZCVUc2
+
+licence_append = W1szYTVjMjg3NDQxYWZhMjdlMzFjYmFmMTQ0ODY3OTcxNl1dAAAAAAAEAAAAAAAAAAAAACwxLCUsRzUwMDAgICAgICwtMSwtMSwwLDIwOTktMDEtMDEgMDA6MDA6MDAsMCwEACxMLVRFU1gtOVZCVUNS
+
+instance_name_prefix = test135-agg
+
+===============
+Change to instructions (step 6):
+
+Add central_manager_public_dns to the table of inputs (after central_manager_ip)and explain that it is the public IP address of the central manager that was already created.
+
+Add data_import_cron_string to the table of inputs (after the tags) and note the default value of "0 0 4 * * ? *", explaining that the user can change the data import schedule for the aggregators.
+
+Add a note that the user can modify modules/aggregator/configure_guardium.expect to change which aggregator will be used as the backup CM, and also which policy will be used by the aggregators.
+===============
+
+===============
+Change to instructions (step 6):
+
+Add instructions to connect to one of the aggregators (similar to the instructions to connect to the CM in step 5), and once connected, check that the policy is installed and that the data import settings are correct.
+
+Add instructions to connect once again to the CM and go to central management screen and see that the aggregator(s) are registered and that one of them is defined as a backup CM.
+===============
+
+Values changed in terraform.tfvars for col:
+
+region = "us-east-1"
+
+vpc_id = vpc-0b88123d60e712fe2
+
+subnet_id = subnet-0c82066180e40df72
+
+collector_ami_id = ami-0ff25c370c7a4b9f1
+
+collector_instance_type = "m6i.2xlarge"
+
+collector_count = 5
+
+key_name = key135
+
+pem_file_path = /home/eli/.ssh/key135.pem
+
+allowed_cidrs =
+[
+  "10.0.0.0/16",
+  "170.225.223.19/32",
+  "129.41.47.1/32"
+]
+
+assign_public_id = true
+
+shared_secret = "guard"
+
+central_manager_ip = "10.0.12.232"
+
+central_manager_public_dns = "44.198.175.80"
+
+licence_base = W1tjODU3OGU1MjRkYWRjOTE2NThhNGNiYWMwNWFjNGQ4MF1df3t/bn8bAAAAAAAAAAAAACw5OTk5LCUsRzUwMDAgICAgICwtMSwtMSwwLDIwOTktMDEtMDEgMDA6MDA6MDAsMSwAACxMLVRFU1gtOVZCVUc2
+
+licence_append = W1szYTVjMjg3NDQxYWZhMjdlMzFjYmFmMTQ0ODY3OTcxNl1dAAAAAAAEAAAAAAAAAAAAACwxLCUsRzUwMDAgICAgICwtMSwtMSwwLDIwOTktMDEtMDEgMDA6MDA6MDAsMCwEACxMLVRFU1gtOVZCVUNS
+
+instance_name_prefix = test135-col
+
+number_collectors_per_aggregator = 2
+
+aggregator_name_prefix = "test135-agg"
+
+===============
+Change to instructions (step 7):
+
+Add central_manager_public_dns to the table of inputs (after central_manager_ip)and explain that it is the public IP address of the central manager that was already created.
+
+Add data_import_cron_string to the table of inputs (after the tags) and note the default value of "0 0 2 * * ? *", explaining that the user can change the data import schedule for the collectors.
+
+Add number_collectors_per_aggregator to the table of inputs and note that it tells Terraform how many collectors to assign to each aggregator for data export.
+
+Add aggregator_name_prefix to the table of inputs and note that it must be the same as the value that was entered in the terraform.tfvars file for the aggregators.
+
+Add a note that the user can modify modules/collector/configure_guardium.expect to change which policy will be used by the collectors.
+===============
+
+===============
+Change to instructions (step 7):
+
+Add instructions to connect to one of the collectors (similar to the instructions to connect to the CM in step 5 and aggregators in step 6), and once connected, check that the policy is installed and that the data export settings are correct, noting different target aggregators for different collectors.
+
+Add instructions to connect once again to the CM and go to central management screen and see that the collector(s) are registered.
+===============
+
