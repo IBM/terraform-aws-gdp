@@ -35,7 +35,7 @@ locals {
   final_vpc_id    = coalesce(var.vpc_id, try(module.auto_vpc[0].vpc_id, null))
   final_subnet_id = coalesce(var.subnet_id, try(module.auto_vpc[0].subnet_cm_id, null))
   # Cloud-Init: resolve user_data_file path relative to this directory
-  user_data      = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
+  user_data = var.user_data_file != "" ? file("${path.module}/${trimprefix(var.user_data_file, "./")}") : null
 }
 
 # =====================================================
@@ -71,7 +71,7 @@ resource "aws_security_group" "guardium_cm_sg" {
   # --- Ingress rules for Guardium ports ---
   dynamic "ingress" {
     for_each = [
-      { from = 22,   to = 22,   desc = "SSH access" },
+      { from = 22, to = 22, desc = "SSH access" },
       { from = 8443, to = 8443, desc = "Guardium Web Console" },
       { from = 3306, to = 3306, desc = "Database communications" },
       { from = 8447, to = 8447, desc = "Guardium patch/upgrade" },
@@ -102,7 +102,7 @@ resource "aws_security_group" "guardium_cm_sg" {
   })
 }
 
-# When using an existing SG (found by name), ensure port 22 (SSH) exists for allowed_cidrs.
+# When using an existing SG (found by name), ensure all Guardium ports exist for allowed_cidrs.
 locals {
   cm_using_existing_sg = (
     var.existing_guardium_cm_sg_id != "" ? true :
@@ -112,19 +112,41 @@ locals {
     var.existing_guardium_cm_sg_id != "" ? var.existing_guardium_cm_sg_id :
     try(data.aws_security_groups.guardium_cm_existing[0].ids[0], null)
   )
+
+  cm_guardium_ports = [
+    { port = 22, desc = "SSH access" },
+    { port = 8443, desc = "Guardium Web Console" },
+    { port = 3306, desc = "Database communications" },
+    { port = 8447, desc = "Guardium patch/upgrade" },
+    { port = 9983, desc = "Guardium replication/aggregation" },
+    { port = 8445, desc = "Application usage and administration" },
+    { port = 8983, desc = "Solr / indexing service" },
+  ]
+
+  cm_sg_rules = local.cm_using_existing_sg && local.cm_existing_sg_id != null ? {
+    for pair in flatten([
+      for p in local.cm_guardium_ports : [
+        for cidr in concat(var.allowed_cidrs, var.custom_allowed_cidrs) : {
+          key  = "${p.port}-${cidr}"
+          port = p.port
+          desc = p.desc
+          cidr = cidr
+        }
+      ]
+    ]) : pair.key => pair
+  } : {}
 }
 
-# Ensure SSH (port 22) is enabled for allowed_cidrs when using an existing SG
-resource "aws_security_group_rule" "guardium_cm_ssh_allowed_cidrs" {
-  for_each = local.cm_using_existing_sg && local.cm_existing_sg_id != null ? toset(var.allowed_cidrs) : toset([])
+resource "aws_security_group_rule" "guardium_cm_allowed_cidrs" {
+  for_each = local.cm_sg_rules
 
   security_group_id = local.cm_existing_sg_id
   type              = "ingress"
-  from_port         = 22
-  to_port           = 22
+  from_port         = each.value.port
+  to_port           = each.value.port
   protocol          = "tcp"
-  cidr_blocks       = [each.value]
-  description       = "SSH access (from allowed_cidrs)"
+  cidr_blocks       = [each.value.cidr]
+  description       = each.value.desc
 }
 
 # =====================================================
@@ -133,9 +155,9 @@ resource "aws_security_group_rule" "guardium_cm_ssh_allowed_cidrs" {
 module "guardium_central_manager" {
   source = "../../modules/central-manager"
 
-  region                 = var.region
-  vpc_id                 = local.final_vpc_id
-  subnet_id              = local.final_subnet_id
+  region    = var.region
+  vpc_id    = local.final_vpc_id
+  subnet_id = local.final_subnet_id
   vpc_security_group_ids = (
     var.existing_guardium_cm_sg_id != "" ? [var.existing_guardium_cm_sg_id] :
     length(try(data.aws_security_groups.guardium_cm_existing[0].ids, [])) > 0
