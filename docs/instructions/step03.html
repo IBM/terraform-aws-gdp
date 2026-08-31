@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Step 3: Install Required Software — GDP on AWS Runbook</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <header class="site-header">
+    <div class="breadcrumb"><a href="index.html">GDP on AWS Runbook</a> › Step 3</div>
+    <h1>Step 3: Install Required Software</h1>
+    <p class="subtitle">Install Terraform, expect, PowerShell, and the AWS CLI on the Linux VM; create an AWS key pair.</p>
+  </header>
+
+  <nav class="step-nav">
+    <a href="index.html">Index</a>
+    <a href="step01.html">1 · Setup Linux</a>
+    <a href="step03.html" class="current">2 · Install software</a>
+    <a href="step04.html">3 · Deploy CM</a>
+    <a href="step06.html">4 · Deploy Aggregators</a>
+    <a href="step07.html">5 · Deploy Collectors</a>
+  </nav>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>You are logged into the Linux VM as the user created in <a href="step01.html">Step 1</a>,
+        in your working directory.</li>
+    <li>An <strong>AWS Access Key ID</strong> and <strong>AWS Secret Access Key</strong>. If you
+        do not have these, ask your AWS administrator.</li>
+    <li>Access to the AWS Console in a web browser.</li>
+  </ul>
+
+  <div class="callout callout-warn">
+    <strong>Important</strong>
+    If any installation step produces an error, stop and troubleshoot before continuing. A failure
+    at this stage is likely to cause errors later when running Terraform.
+  </div>
+
+  <div class="callout callout-note">
+    <strong>Platform note (RHEL / CentOS / Fedora)</strong>
+    All commands below use <code>dnf</code> and <code>yum</code>, which are specific to
+    Red Hat-based distributions. Adapt them for your distribution if necessary.
+  </div>
+
+  <h2>Install yum-utils</h2>
+  <pre><code><span class="prompt">$ </span>sudo dnf install -y yum-utils</code></pre>
+
+  <h2>Install Terraform</h2>
+  <pre><code><span class="prompt">$ </span>sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+<span class="prompt">$ </span>sudo yum install -y terraform</code></pre>
+
+  <h2>Install expect</h2>
+  <p>The Terraform scripts use <code>expect</code> to automate interactive SSH sessions during
+  appliance configuration.</p>
+  <pre><code><span class="prompt">$ </span>sudo dnf install -y expect</code></pre>
+
+  <h2>Install PowerShell</h2>
+  <p>The Terraform scripts also call PowerShell scripts for certain configuration tasks.</p>
+  <pre><code><span class="prompt">$ </span>sudo rm -f /etc/yum.repos.d/microsoft.repo
+<span class="prompt">$ </span>curl -o packages-microsoft-prod.rpm https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
+<span class="prompt">$ </span>sudo rpm -Uvh packages-microsoft-prod.rpm
+<span class="prompt">$ </span>sudo dnf update --nobest</code></pre>
+
+  <div class="callout callout-note">
+    <strong>Note</strong>
+    <code>dnf update --nobest</code> may take several minutes and may prompt you to confirm
+    packages to be installed. Answer <kbd>y</kbd> when prompted.
+  </div>
+
+  <pre><code><span class="prompt">$ </span>sudo dnf install powershell</code></pre>
+
+  <div class="callout callout-note">
+    <strong>Note</strong>
+    This command may also prompt you to confirm packages. Answer <kbd>y</kbd> when prompted.
+  </div>
+
+  <p>Verify that PowerShell is working.</p>
+  <pre><code><span class="prompt">$ </span>pwsh</code></pre>
+  <p>You should see the PowerShell version printed and a <code>PS ...&gt;</code> prompt. Then exit.</p>
+  <pre><code><span class="prompt">PS ...&gt; </span>exit</code></pre>
+
+  <h2>Install the AWS CLI</h2>
+  <p>First switch to your home directory, then run the installation.</p>
+  <pre><code><span class="prompt">$ </span>cd
+<span class="prompt">$ </span>curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+<span class="prompt">$ </span>unzip awscliv2.zip
+<span class="prompt">$ </span>sudo ./aws/install
+<span class="prompt">$ </span>aws configure</code></pre>
+  <p>
+    You will be prompted for your <strong>AWS Access Key ID</strong> and
+    <strong>AWS Secret Access Key</strong>. You will also be prompted for a default region and
+    default output format — you can press <kbd>Enter</kbd> for both of those.
+  </p>
+  <p>Return to your working directory when done.</p>
+  <pre><code><span class="prompt">$ </span>cd ~/work</code></pre>
+
+  <h2>Create an AWS EC2 key pair</h2>
+  <p>
+    You need an RSA key pair to allow Terraform to connect to the GDP instances it creates
+    via SSH. The following steps show how to create one in the AWS Console.
+  </p>
+
+  <div class="callout callout-note">
+    <strong>Note</strong>
+    The steps below reflect one common way to reach the AWS Console. Your organisation's
+    AWS sign-in URL may differ.
+  </div>
+
+  <ol class="steps">
+    <li>Open the AWS Console in a web browser and navigate to the <strong>EC2</strong> dashboard.</li>
+    <li>
+      In the left-side menu, locate the <strong>Network &amp; Security</strong> section and
+      click <strong>Key Pairs</strong>.
+    </li>
+    <li>Click the orange <strong>Create key pair</strong> button (top-right of the page).</li>
+    <li>
+      Fill in the form:
+      <ul>
+        <li><strong>Name:</strong> a descriptive name (e.g. <code>mykeyname</code>).
+            AWS will create a file named <code>mykeyname.pem</code>.</li>
+        <li><strong>Key pair type:</strong> RSA</li>
+        <li><strong>Private key file format:</strong> .pem</li>
+      </ul>
+    </li>
+    <li>
+      Click <strong>Create key pair</strong>. Your browser will prompt you to download the
+      <code>.pem</code> file. Save it to a known location on your computer.
+    </li>
+    <li>
+      Copy the <code>.pem</code> file to your Linux VM's <code>~/.ssh/</code> directory.
+      Run this command from your computer (replace the filename and hostname as appropriate).
+      <pre><code><span class="prompt">% </span>scp -O mykeyname.pem eli@terraformaws.dev.fyre.ibm.com:/home/eli/.ssh/</code></pre>
+    </li>
+    <li>
+      Also copy it to the <code>~/.ssh/</code> directory on your computer and set its
+      permissions.
+      <pre><code><span class="prompt">% </span>cp mykeyname.pem ~/.ssh/
+<span class="prompt">% </span>chmod 400 ~/.ssh/mykeyname.pem</code></pre>
+    </li>
+    <li>
+      Back on the Linux VM, set the correct permissions there too.
+      <pre><code><span class="prompt">$ </span>chmod 400 ~/.ssh/mykeyname.pem</code></pre>
+    </li>
+  </ol>
+
+  <h2>Default policy on the Central Manager</h2>
+  <p>
+    When Terraform provisions the Central Manager, it automatically installs a default policy on it.
+    If you want to use a different policy, you can change which policy is installed by editing
+    <code>modules/central-manager/configure_guardium.expect</code> before running Terraform.
+  </p>
+
+  <h2>Note your IP addresses</h2>
+  <p>You will need the IP addresses of your Linux VM and your computer later when configuring
+  security group access in <a href="step04.html">Step 3</a>.</p>
+
+  <p>On the Linux VM:</p>
+  <pre><code><span class="prompt">$ </span>curl ifconfig.me</code></pre>
+
+  <p>On your computer:</p>
+  <pre><code><span class="prompt">% </span>curl https://api.ipify.org</code></pre>
+
+  <p>Save both IP addresses for use in the next step.</p>
+
+  <div class="callout callout-tip">
+    <strong>Next step</strong>
+    Proceed to <a href="step04.html">Step 3: Deploy the Central Manager</a>.
+  </div>
+
+</div>
+<footer>Made with IBM Bob</footer>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Step 6: Deploy the Collectors — GDP on AWS Runbook</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <header class="site-header">
+    <div class="breadcrumb"><a href="index.html">GDP on AWS Runbook</a> › Step 6</div>
+    <h1>Step 6: Deploy the Collectors</h1>
+    <p class="subtitle">Configure <code>terraform.tfvars</code> and run Terraform to provision the Collector instances on AWS.</p>
+  </header>
+
+  <nav class="step-nav">
+    <a href="index.html">Index</a>
+    <a href="step01.html">1 · Setup Linux</a>
+    <a href="step03.html">2 · Install software</a>
+    <a href="step04.html">3 · Deploy CM</a>
+    <a href="step06.html">4 · Deploy Aggregators</a>
+    <a href="step07.html" class="current">5 · Deploy Collectors</a>
+  </nav>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>The Terraform scripts from <a href="step04.html">Step 4</a> and <a href="step06.html">Step 5</a> completed successfully.</li>
+    <li>You are logged into the Linux VM as your Terraform user, in your working directory.</li>
+    <li>You have the AWS Console open in a web browser.</li>
+  </ul>
+
+  <h2>Navigate to the example directory</h2>
+  <pre><code><span class="prompt">$ </span>cd terraform-aws-gdp/examples/collector/</code></pre>
+
+  <h2>Create the variables file</h2>
+  <p>
+    The repository includes a fully commented example file. Copy it to create your own
+    <code>terraform.tfvars</code>.
+  </p>
+  <pre><code><span class="prompt">$ </span>cp terraform.tfvars.example terraform.tfvars</code></pre>
+
+  <p>Open <code>terraform.tfvars</code> in a text editor and set each value as described
+  in the table below.</p>
+
+  <h2>Variable reference</h2>
+
+  <h3>Required variables</h3>
+  <table>
+    <thead>
+      <tr><th>Variable</th><th>Description</th><th>Example</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="param">region</td>
+        <td>
+          AWS region code where the Collectors will be created.
+          Use the region code (e.g. <code>us-east-1</code>), not the location name.
+        </td>
+        <td><code>us-east-1</code></td>
+      </tr>
+      <tr>
+        <td class="param">vpc_id</td>
+        <td>
+          ID of the VPC where the Collectors will be created. In the AWS Console,
+          navigate to <strong>VPC &rsaquo; Your VPCs</strong> and note the VPC ID (not
+          the VPC name).
+        </td>
+        <td><code>vpc-0b88123d60e712fe2</code></td>
+      </tr>
+      <tr>
+        <td class="param">subnet_id</td>
+        <td>
+          ID of the subnet within the VPC. From the VPC Dashboard, click
+          <strong>Subnets</strong>, filter by your VPC, and note the Subnet ID (not
+          the subnet name).
+        </td>
+        <td><code>subnet-0c82066180e40df72</code></td>
+      </tr>
+      <tr>
+        <td class="param">ami_type</td>
+        <td>
+          Type of AMI being used. Use <code>legacy</code> unless instructed otherwise.
+        </td>
+        <td><code>legacy</code></td>
+      </tr>
+      <tr>
+        <td class="param">collector_ami_id</td>
+        <td>
+          AMI ID of the Collector image. In the EC2 Dashboard, click
+          <strong>AMI Catalog &rsaquo; My AMIs</strong>, locate the Collector AMI
+          you want to use, and copy its AMI ID (not the name).
+        </td>
+        <td><code>ami-0ff25c370c7a4b9f1</code></td>
+      </tr>
+      <tr>
+        <td class="param">collector_instance_type</td>
+        <td>
+          AWS instance type for the Collectors. In the EC2 Dashboard, click
+          <strong>Instance Types</strong> and note the type code.
+        </td>
+        <td><code>m6i.2xlarge</code></td>
+      </tr>
+      <tr>
+        <td class="param">collector_count</td>
+        <td>The number of Collectors you want to create.</td>
+        <td><code>3</code></td>
+      </tr>
+      <tr>
+        <td class="param">key_name</td>
+        <td>
+          Name of the AWS key pair created in <a href="step03.html">Step 3</a>.
+          This is the filename of the <code>.pem</code> file without the extension.
+        </td>
+        <td><code>mykeyname</code></td>
+      </tr>
+      <tr>
+        <td class="param">pem_file_path</td>
+        <td>
+          Absolute path to the <code>.pem</code> file <strong>on the Linux VM</strong>.
+        </td>
+        <td><code>/home/eli/.ssh/mykeyname.pem</code></td>
+      </tr>
+      <tr>
+        <td class="param">allowed_cidrs</td>
+        <td>
+          List of CIDR blocks that are allowed to access the Collectors.
+          Typically includes the VPC CIDR, plus the IP addresses of your Linux VM and
+          your computer. Use <code>/32</code> for individual host IPs.
+        </td>
+        <td><pre><code>["10.0.0.0/16",
+ "170.225.223.16/32",
+ "147.236.177.70/32"]</code></pre></td>
+      </tr>
+      <tr>
+        <td class="param">custom_allowed_cidrs</td>
+        <td>
+          Additional CIDR blocks to allow (optional). Leave as an empty list if not needed.
+        </td>
+        <td><code>[]</code></td>
+      </tr>
+      <tr>
+        <td class="param">assign_public_ip</td>
+        <td>
+          Whether to assign a public IP address to the Collectors. If you leave
+          this as <code>false</code>, you must use a bastion host for the deployment.
+          The instructions in these pages assume you are setting this value to
+          <code>true</code>.
+        </td>
+        <td><code>false</code></td>
+      </tr>
+      <tr>
+        <td class="param">user_data_file</td>
+        <td>
+          Path to the Cloud-Init user-data file, used for license handling. Do not edit.
+        </td>
+        <td><code>./user-data.yaml</code></td>
+      </tr>
+      <tr>
+        <td class="param">shared_secret</td>
+        <td>
+          The secret key used when Collectors register with the Central Manager. Must match
+          the value you used when deploying the Central Manager.
+        </td>
+        <td><code>guard</code></td>
+      </tr>
+      <tr>
+        <td class="param">central_manager_ip</td>
+        <td>
+          The private IP address of the Central Manager. Use the private IP address here
+          even if you are assigning public IP addresses to the Collectors.
+        </td>
+        <td><code>10.0.12.37</code></td>
+      </tr>
+      <tr>
+        <td class="param">central_manager_public_dns</td>
+        <td>
+          The public IP address (or DNS hostname) of the Central Manager that was already
+          created in <a href="step04.html">Step 4</a>. This is the address used by Terraform
+          to connect to the Central Manager when registering the Collectors.
+        </td>
+        <td><code>44.198.175.80</code></td>
+      </tr>
+      <tr>
+        <td class="param">license_base</td>
+        <td>
+          Base license for the Collectors. Obtain this from your IBM Guardium administrator.
+        </td>
+        <td><em>(long encoded string — obtain from your administrator)</em></td>
+      </tr>
+      <tr>
+        <td class="param">license_append</td>
+        <td>
+          Append license for the Collectors. Obtain this from your IBM Guardium administrator.
+        </td>
+        <td><em>(long encoded string — obtain from your administrator)</em></td>
+      </tr>
+      <tr>
+        <td class="param">domain</td>
+        <td>Domain name for the GDP appliance. This is site-specific.</td>
+        <td><code>corp.mycompany.local</code></td>
+      </tr>
+      <tr>
+        <td class="param">timezone</td>
+        <td>
+          Timezone for the GDP appliance, in <a href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones">tz database</a> format.
+        </td>
+        <td><code>America/New_York</code></td>
+      </tr>
+      <tr>
+        <td class="param">resolver1<br>resolver2</td>
+        <td>
+          Primary and secondary DNS resolvers for the GDP appliance. These are site-specific.
+        </td>
+        <td><code>8.8.4.4</code><br><code>1.1.1.1</code></td>
+      </tr>
+      <tr>
+        <td class="param">tags</td>
+        <td>
+          A map of AWS tags to apply to the created resources. These are site-specific and
+          used for cost tracking and organisation.
+        </td>
+        <td><pre><code>{
+  Environment = "dev"
+  Project     = "GuardiumGDP"
+  Owner       = "you@example.com"
+  Role        = "Collector"
+}</code></pre></td>
+      </tr>
+      <tr>
+        <td class="param">data_import_cron_string</td>
+        <td>
+          Cron expression that controls when the Collectors send data to their Aggregators.
+          You can change this to adjust the data export schedule. The default value runs the
+          export daily at 02:00.
+        </td>
+        <td><code>0 0 2 * * ? *</code></td>
+      </tr>
+      <tr>
+        <td class="param">number_collectors_per_aggregator</td>
+        <td>
+          Tells Terraform how many Collectors to assign to each Aggregator for data export.
+          For example, if you have 6 Collectors and 2 Aggregators, set this to <code>3</code>
+          to distribute them evenly.
+        </td>
+        <td><code>2</code></td>
+      </tr>
+      <tr>
+        <td class="param">aggregator_name_prefix</td>
+        <td>
+          The name prefix used for the Aggregator instances. Must match the value that was
+          entered for <code>instance_name_prefix</code> in the Aggregator
+          <code>terraform.tfvars</code> file in <a href="step06.html">Step 5</a>.
+        </td>
+        <td><code>guard-agg</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-note">
+    <strong>Customising policies</strong>
+    Before running Terraform, you can edit
+    <code>modules/collector/configure_guardium.expect</code> to change which policy will be
+    installed on the Collectors.
+  </div>
+
+  <h3>Optional: existing security groups</h3>
+  <p>
+    If you want to reuse existing AWS security groups rather than having Terraform create new
+    ones, you can provide their IDs here. Leave all three empty if you want Terraform to manage
+    security groups automatically.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Variable</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="param">existing_guardium_cm_sg_id</td>
+        <td>Security group to use for the Central Manager. Leave empty to auto-create.</td>
+      </tr>
+      <tr>
+        <td class="param">existing_guardium_aggregator_sg_id</td>
+        <td>Security group for Aggregators. Leave empty to auto-create.</td>
+      </tr>
+      <tr>
+        <td class="param">existing_guardium_collector_sg_id</td>
+        <td>Security group for Collectors. Leave empty to auto-create.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Optional: instance naming and storage</h3>
+  <p>
+    These variables are commented out in <code>terraform.tfvars.example</code> by default.
+    Uncomment and set them if you need to override the defaults.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Variable</th><th>Description</th><th>Default</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="param">instance_name_prefix</td>
+        <td>
+          Prefix for the instance name tag. The instance number is appended automatically
+          (e.g. <code>guard-col</code> produces <code>guard-col01</code>,
+          <code>guard-col02</code>, etc.).
+        </td>
+        <td><code>guard-col</code></td>
+      </tr>
+      <tr>
+        <td class="param">root_volume_size</td>
+        <td>Size of the root EBS volume in GB.</td>
+        <td><code>1500</code></td>
+      </tr>
+      <tr>
+        <td class="param">root_volume_type</td>
+        <td>EBS volume type.</td>
+        <td><code>gp3</code></td>
+      </tr>
+      <tr>
+        <td class="param">root_volume_delete_on_termination</td>
+        <td>Whether the root volume is deleted when the instance is terminated.</td>
+        <td><code>true</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Run Terraform</h2>
+  <p>Once you have finished editing and saved <code>terraform.tfvars</code>, run the following commands.</p>
+  <pre><code><span class="prompt">$ </span>terraform init -reconfigure
+<span class="prompt">$ </span>terraform apply -auto-approve</code></pre>
+
+  <p>
+    The plan will be displayed. The script will take several minutes to complete.
+  </p>
+
+  <div class="callout callout-warn">
+    <strong>If there are errors</strong>
+    Stop, fix the issue, and run <code>terraform apply -auto-approve</code> again. Do not proceed with
+    a failed deployment.
+  </div>
+
+  <p>
+    When the script finishes successfully it prints details about the provisioned instances,
+    including their security group ID and both internal and external IP addresses.
+    <strong>Record these values</strong> for future reference.
+  </p>
+
+  <h2>Verify the Collector deployment</h2>
+
+  <h3>Connect to a Collector</h3>
+  <p>
+    Connect to one of the Collectors in a web browser using its public IP address
+    (from the Terraform output or the AWS Console):
+  </p>
+  <pre><code>https://ip-address:8443</code></pre>
+  <p>Log in using:</p>
+  <ul>
+    <li><strong>User:</strong> <code>admin</code></li>
+    <li><strong>Password:</strong> the same password as the Central Manager</li>
+  </ul>
+  <p>
+    Once logged in, verify that the expected policy is installed and that the data export settings
+    are correct (navigate to <strong>Setup &rsaquo; Tools and Views &rsaquo; Data Import/Export</strong>).
+    Note that different Collectors will show different target Aggregators in their data export
+    configuration, depending on how they were distributed across Aggregators.
+  </p>
+
+  <h3>Verify registration on the Central Manager</h3>
+  <p>
+    Connect to the Central Manager (as in <a href="step04.html">Step 4</a>) and navigate to
+    <strong>Setup &rsaquo; Central Management</strong>. Confirm that all Collectors appear in
+    the central management list.
+  </p>
+
+</div>
+<footer>Made with IBM Bob</footer>
+</body>
+</html>

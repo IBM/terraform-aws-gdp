@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Step 2: Set up the Linux VM — GDP on AWS Runbook</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <header class="site-header">
+    <div class="breadcrumb"><a href="index.html">GDP on AWS Runbook</a> › Step 2</div>
+    <h1>Step 2: Set up the Linux VM</h1>
+    <p class="subtitle">Create a user, configure Git, set up GitHub SSH access, and clone the Terraform repository.</p>
+  </header>
+
+  <nav class="step-nav">
+    <a href="index.html">Index</a>
+    <a href="step01.html">1 · Create VM</a>
+    <a href="step02.html" class="current">2 · Set up VM</a>
+    <a href="step03.html">3 · Install software</a>
+    <a href="step04.html">4 · Deploy CM</a>
+    <a href="step05.html">5 · Connect to CM</a>
+    <a href="step06.html">6 · Deploy Aggregators</a>
+    <a href="step07.html">7 · Deploy Collectors</a>
+  </nav>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>Root access to the Linux VM (from <a href="step01.html">Step 1</a> or your own machine).</li>
+    <li>A GitHub account at <a href="https://github.com">github.com</a>.</li>
+  </ul>
+
+  <div class="callout callout-note">
+    <strong>Note</strong>
+    If you already have a non-root user with <code>sudo</code> access on your Linux machine,
+    skip the user-creation sub-section below and continue from
+    <strong>"Configure Git"</strong>.
+  </div>
+
+  <h2>Create a user</h2>
+  <p>
+    Open a terminal on your computer and connect to the Linux VM as root.
+    Substitute the hostname of your VM as appropriate.
+  </p>
+  <pre><code><span class="prompt">% </span>ssh root@terraformaws.dev.fyre.ibm.com</code></pre>
+
+  <p>On the Linux VM, create a user, set a password, and add them to the <code>wheel</code> group for <code>sudo</code> access.</p>
+  <pre><code><span class="prompt"># </span>useradd eli
+<span class="prompt"># </span>passwd eli
+<span class="prompt"># </span>usermod -aG wheel eli</code></pre>
+
+  <p>Exit back to your computer.</p>
+  <pre><code><span class="prompt"># </span>exit</code></pre>
+
+  <h2>Verify sudo access (optional)</h2>
+  <p>Reconnect as the new user and confirm sudo access.</p>
+  <pre><code><span class="prompt">% </span>ssh eli@terraformaws.dev.fyre.ibm.com</code></pre>
+  <pre><code><span class="prompt">$ </span>sudo -l</code></pre>
+  <p>You should see output ending with a line like:</p>
+  <pre><code>User eli may run the following commands on terraformaws:
+    (ALL) ALL</code></pre>
+
+  <h2>Create a working directory</h2>
+  <pre><code><span class="prompt">$ </span>mkdir work
+<span class="prompt">$ </span>cd work</code></pre>
+
+  <h2>Configure Git</h2>
+  <p>Replace the name and email with your own details.</p>
+  <pre><code><span class="prompt">$ </span>git config --global user.name "Your Name"
+<span class="prompt">$ </span>git config --global user.email "you@example.com"</code></pre>
+
+  <h2>Create an SSH key for GitHub</h2>
+  <p>Use the same email address you use to log into GitHub.</p>
+  <pre><code><span class="prompt">$ </span>ssh-keygen -t ed25519 -C "you@example.com"</code></pre>
+  <p>
+    When prompted for a file name, you can press <kbd>Enter</kbd> to accept the default
+    (<code>~/.ssh/id_ed25519</code>), or enter a custom path such as
+    <code>~/.ssh/yourname_ed25519</code>. If you use a custom name, use the
+    <strong>absolute path</strong> (e.g. <code>/home/eli/.ssh/yourname_ed25519</code>) — if
+    you enter only a filename without a path it will be saved in the current directory.
+  </p>
+  <p>Start the SSH agent and add the key.</p>
+  <pre><code><span class="prompt">$ </span>eval "$(ssh-agent -s)"
+<span class="prompt">$ </span>chmod 600 ~/.ssh/yourname_ed25519
+<span class="prompt">$ </span>chmod 644 ~/.ssh/yourname_ed25519.pub
+<span class="prompt">$ </span>ssh-add ~/.ssh/yourname_ed25519</code></pre>
+
+  <p>Print the public key to the screen so you can copy it.</p>
+  <pre><code><span class="prompt">$ </span>cat ~/.ssh/yourname_ed25519.pub</code></pre>
+
+  <h2>Add the public key to GitHub</h2>
+  <ol class="steps">
+    <li>In a web browser, go to <a href="https://github.com">github.com</a> and sign in.</li>
+    <li>Click your profile picture (top-right) and choose <strong>Settings</strong>.</li>
+    <li>In the left-side menu, click <strong>SSH and GPG keys</strong>.</li>
+    <li>Click <strong>New SSH key</strong>.</li>
+    <li>Give the key a descriptive title (e.g. <em>terraformaws VM</em>), paste the public key
+        you copied into the <strong>Key</strong> field, and click <strong>Add SSH key</strong>.</li>
+  </ol>
+
+  <h2>Test GitHub access</h2>
+  <p>Back on the Linux VM, verify the key works.</p>
+  <pre><code><span class="prompt">$ </span>ssh -T git@github.com</code></pre>
+  <p>You should see a message confirming you have been successfully authenticated.
+    If you do not, troubleshoot before continuing.</p>
+
+  <h2>Clone the Terraform repository</h2>
+  <pre><code><span class="prompt">$ </span>git clone git@github.com:IBM/terraform-aws-gdp.git</code></pre>
+  <p>This creates a <code>terraform-aws-gdp</code> directory inside your working directory.</p>
+
+  <div class="callout callout-tip">
+    <strong>Next step</strong>
+    Proceed to <a href="step03.html">Step 3: Install required software</a>.
+  </div>
+
+</div>
+<footer>Made with IBM Bob</footer>
+</body>
+</html>
