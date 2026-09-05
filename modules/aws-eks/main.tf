@@ -106,7 +106,7 @@ resource "guardium-data-protection_aws_vpc_cleanup" "vpc_cleanup" {
 module "eks" {
   count   = var.deploy_eks ? 1 : 0
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.0"
+  version = "~> 21.0"
 
   cluster_name    = var.cluster_name
   cluster_version = var.kubernetes_version
