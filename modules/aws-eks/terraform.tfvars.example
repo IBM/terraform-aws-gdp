@@ -1,0 +1,64 @@
+# Copyright (c) IBM Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# AWS Configuration
+aws_region = "us-east-2"
+
+# AWS Authentication (Optional - uses environment variables if not set)
+# Option 1: Use AWS Profile
+# aws_profile = "aws-gdp-techprev"
+
+# Option 2: Use Access Keys (not recommended for production)
+# aws_access_key_id     = "YOUR_ACCESS_KEY_ID"
+# aws_secret_access_key = "YOUR_SECRET_ACCESS_KEY"
+
+# If neither is set, Terraform will use:
+# - AWS_PROFILE environment variable
+# - AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables
+# - AWS credentials file (~/.aws/credentials)
+# - EC2 instance profile (if running on EC2)
+
+# EKS Cluster Configuration
+cluster_name       = "edge-eks-gm"
+kubernetes_version = "1.33"
+
+# Network Configuration
+vpc_cidr             = "10.0.0.0/16"
+private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+public_subnet_cidrs  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+# Node Group Configuration
+node_group_name          = "ng-gm"
+node_instance_type       = "m5.4xlarge"
+node_group_min_size      = 1
+node_group_max_size      = 4
+node_group_desired_size  = 2
+node_volume_size         = 500
+
+# SSH Configuration
+# IMPORTANT: Create an EC2 key pair in AWS console first, then specify its name here
+# How to import key pair to aws ec2
+# e.g: ssh-keygen -y -f .ssh/ec2_id_rsa > ~/.ssh/ec2_id_rsa.pub
+# e.g: aws ec2 import-key-pair --key-name my-eks-key --public-key-material fileb:///.ssh/ec2_id_rsa.pub --region us-east-2
+# Example: ssh_key_name = "my-eks-key"
+ssh_key_name = ""
+
+# SSH Access Control
+# IMPORTANT: Restrict this to your IP address or corporate network for security
+# Example: ssh_allowed_cidr_blocks = ["203.0.113.0/24"]
+ssh_allowed_cidr_blocks = ["0.0.0.0/0"]
+
+# Storage Configuration
+create_efs = true
+
+# CSI Driver Versions (optional - leave as null to use latest)
+ebs_csi_driver_version = null
+efs_csi_driver_version = null
+
+# Tags
+tags = {
+  Environment = "development"
+  ManagedBy   = "terraform"
+  Project     = "guardium-jewel"
+  Owner       = "your-team-name"
+}

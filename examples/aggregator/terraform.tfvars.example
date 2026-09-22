@@ -1,0 +1,164 @@
+#
+# Copyright (c) IBM Corp. 2026
+# SPDX-License-Identifier: Apache-2.0
+#
+
+######################################
+# IBM Guardium GDP – Aggregator Vars
+######################################
+
+# Copy this file to terraform.tfvars and edit the values in it
+# before running "terraform plan" and "terraform apply".
+
+# =====================================================
+# AWS Region & Network
+# =====================================================
+
+# AWS region where GDP is to be created.
+region = ""
+
+# ID of the VPC that GDP will be created in.
+vpc_id = ""
+
+# Subnet that GDP will be created in.
+subnet_id = ""
+
+# =====================================================
+# Guardium Aggregator Deployment
+# =====================================================
+
+# AMI type: 'legacy' - for unit-type-specific AMIs or 'unified' - for multi-unit-type AMIs
+# When using unified AMI, the system automatically configures the unit type.
+ami_type = "legacy"
+
+# AMI image to be used for the GDP machine.
+aggregator_ami_id = ""
+
+# AWS instance type to be used for the GDP machine.
+aggregator_instance_type = ""
+
+# How many aggregators to create.
+aggregator_count = 1
+
+# =====================================================
+# SSH Access
+# =====================================================
+
+# Name of the key pair used to access GDP on AWS
+key_name = ""
+
+# Path on the computer running this process to the PEM file
+pem_file_path = ""
+
+# =====================================================
+# Security Group CIDRs
+# =====================================================
+
+# IP addresses that can access the GDP machine.
+allowed_cidrs = [
+  "10.0.0.0/16"
+]
+
+# Optional custom admin IPs
+custom_allowed_cidrs = [
+]
+
+# =====================================================
+# Public vs Private IP
+# =====================================================
+
+# Should the GDP machine have a public IP address or be
+# accessible only through bastion. use true or false
+assign_public_ip = false
+
+# =====================================================
+# Cloud-Init (optional)
+# =====================================================
+
+# Path to Cloud-Init user-data file
+user_data_file = "./user-data.yaml"
+
+# =====================================================
+# Shared Secret (for Central Manager registration)
+# =====================================================
+
+# Shared secret that must match the Central Manager. Used when registering this Aggregator.
+shared_secret = ""
+
+# =====================================================
+# Central Manager Registration
+# =====================================================
+
+# IP address of the Central Manager to register with
+central_manager_ip = ""
+
+# Public IP address of the Central Manager for other commands
+central_manager_public_dns = ""
+
+# =====================================================
+# GDP License Keys (optional)
+# =====================================================
+
+# AWS Trial Base license. Leave empty to skip automated license installation.
+license_base = ""
+
+# Append Trial License. Leave empty to skip automated license installation.
+license_append = ""
+
+# =====================================================
+# Instance Naming
+# =====================================================
+
+# Prefix for instance name tag. Instance number will be appended (e.g., guard-agg-01)
+instance_name_prefix = "guard-agg"
+
+# =====================================================
+# GDP Configuration
+# =====================================================
+
+# Domain name
+domain = "corp.mycompany.local"
+
+# Timezone
+timezone = "America/New_York"
+
+# DNS servers
+resolver1 = "8.8.4.4"
+resolver2 = "1.1.1.1"
+
+# GDP tags
+tags = {
+  Environment = "dev"
+  Project     = "GuardiumGDP"
+  Owner       = "customer@example.com"
+  Role        = "Aggregator"
+}
+
+# =====================================================
+# Data Import
+# =====================================================
+
+# Cron expression (Quartz format) for the DataImport scheduled job.
+data_import_cron_string = "0 0 4 * * ? *"
+
+# =====================================================
+# Storage (optional)
+# =====================================================
+
+# Size of the root EBS volume in GB (minimum 1500 GB for Aggregator)
+# root_volume_size = 1500
+
+# Type of the root EBS volume (gp2, gp3, io1, io2)
+# root_volume_type = "gp3"
+
+# Whether to delete the root volume when the instance is terminated
+# root_volume_delete_on_termination = true
+
+# =====================================================
+# Existing Security Groups (optional)
+# =====================================================
+
+# Leave empty to auto-create a new SG or detect existing "guardium-agg-sg"
+existing_guardium_aggregator_sg_id = ""
+existing_guardium_cm_sg_id         = ""
+existing_guardium_collector_sg_id  = ""

@@ -1,0 +1,409 @@
+#!/usr/bin/expect -f
+
+#
+# Copyright (c) IBM Corp. 2026
+# SPDX-License-Identifier: Apache-2.0
+#
+
+# IBM Guardium GDP – Collector Auto Configuration
+
+set timeout 300
+
+# Prompt pattern: requires chars before/after dot/dash to avoid false matches like "Setup -> License"
+set prompt_pattern {[a-zA-Z0-9._-]+[.-][a-zA-Z0-9._-]+>\s*}
+
+proc wait_for_prompt {} {
+    global prompt_pattern
+    expect {
+        -re $prompt_pattern { return 0 }
+        timeout {
+            puts "\[WARN\] Timeout waiting for CLI prompt."
+            return 1
+        }
+    }
+}
+
+# Argument validation
+if {$argc != 17} {
+    puts "\[ERROR\] Expected 17 arguments, got $argc\nArgs: $argv"
+    exit 2
+}
+
+# Arguments from Terraform
+set HOSTNAME                  [lindex $argv 0]
+set PRIVATE_IP                [lindex $argv 1]
+set PUBLIC_DNS                [lindex $argv 2]
+set PEM_FILE                  [lindex $argv 3]
+set SUBNET_PREFIX             [lindex $argv 4]
+set GATEWAY                   [lindex $argv 5]
+set RESOLVER1                 [lindex $argv 6]
+set DOMAIN                    [lindex $argv 7]
+set RESOLVER2                 [lindex $argv 8]
+set TIMEZONE                  [lindex $argv 9]
+set SHARED_SECRET             [lindex $argv 10]
+set CENTRAL_MANAGER           [lindex $argv 11]
+set LICENSE_BASE              [lindex $argv 12]
+set LICENSE_APPEND            [lindex $argv 13]
+set AGG_HOST                  [lindex $argv 14]
+set CM_PUBLIC_DNS             [lindex $argv 15]
+set DATA_EXPORT_CRON_STRING   [lindex $argv 16]
+
+# Determine connection target (prefer public IP)
+if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
+    set TARGET $PRIVATE_IP
+    set CONNECT_MODE "private"
+} else {
+    set TARGET $PUBLIC_DNS
+    set CONNECT_MODE "public"
+}
+
+# Logging setup
+file mkdir "./logs"
+set LOGFILE "./logs/configure_guardium_[exec date +%Y%m%d_%H%M%S]_on_${HOSTNAME}.log"
+log_file -a $LOGFILE
+
+puts "\n=== Starting Guardium CLI Configuration ==="
+puts "Host: $HOSTNAME"
+puts "Private IP: $PRIVATE_IP"
+puts "Public DNS: $PUBLIC_DNS"
+puts "Using $CONNECT_MODE connection: $TARGET"
+puts "Subnet Prefix: /$SUBNET_PREFIX"
+puts "Gateway: $GATEWAY"
+puts "Resolver1: $RESOLVER1"
+puts "Resolver2: $RESOLVER2"
+puts "Domain: $DOMAIN"
+puts "Timezone: $TIMEZONE"
+puts "Log file: $LOGFILE"
+puts "===========================================\n"
+
+# Pre-flight connectivity test
+if { ![file exists $PEM_FILE] } {
+    puts "\n\[ERROR\] PEM file not found: $PEM_FILE"
+    exit 3
+}
+
+set test_timeout 15
+puts "\[INFO\] Testing connectivity to $TARGET..."
+if {[catch {spawn ssh -o BatchMode=yes -o ConnectTimeout=$test_timeout -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET} result]} {
+    puts "\n\[NOTE\] Guardium instance $HOSTNAME is unreachable (likely no public IP or no route)."
+    puts "\[NOTE\] Skipping configuration safely — instance will remain untouched."
+    exit 0
+}
+
+expect {
+    -re $prompt_pattern {
+        puts "\[INFO\] Connection to $TARGET successful - continuing configuration."
+        send "quit\r"
+        exp_close
+    }
+    timeout {
+        puts "\n\[NOTE\] Timeout testing $TARGET - likely in private subnet without route."
+        puts "\[NOTE\] Skipping configuration safely."
+        exit 0
+    }
+}
+
+# PHASE 1: Network Configuration
+spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
+expect {
+    -nocase {System is now operational in CLI regular mode} { exp_continue }
+    -re $prompt_pattern {}
+    timeout {
+        puts "\[WARN\] Timeout waiting for CLI prompt in phase 1 - instance may be unreachable (private subnet)."
+        exit 0
+    }
+}
+
+send -- "store network interface ip $PRIVATE_IP/$SUBNET_PREFIX\r"
+wait_for_prompt
+
+send -- "store network routes defaultroute $GATEWAY\r"
+wait_for_prompt
+
+if { $RESOLVER1 ne "" } {
+    if { $RESOLVER2 ne "" } {
+        puts "\[INFO\] Configuring DNS resolvers: $RESOLVER1, $RESOLVER2"
+        send -- "store net resolvers $RESOLVER1 $RESOLVER2\r"
+    } else {
+        puts "\[INFO\] Configuring DNS resolver: $RESOLVER1"
+        send -- "store net resolvers $RESOLVER1\r"
+    }
+    wait_for_prompt
+} else {
+    puts "\[INFO\] No DNS resolvers provided."
+}
+
+if { $HOSTNAME ne "" } {
+    puts "\[INFO\] Configuring hostname: $HOSTNAME"
+    send -- "store system hostname $HOSTNAME\r"
+    expect {
+        -timeout 30
+        "(y/n)?" {
+            send "n\r"
+            expect {
+                -timeout 210
+                -re $prompt_pattern {}
+                {Traceback (most recent call last)} {
+                    puts "\[WARN\] Hostname might not be set to $HOSTNAME - continuing."
+                    wait_for_prompt
+                }
+                timeout {
+                    puts "\[WARN\] Timeout setting hostname - continuing."
+                    wait_for_prompt
+                }
+            }
+        }
+        timeout {
+            puts "\[WARN\] Timeout setting hostname - continuing."
+            wait_for_prompt
+        }
+    }
+}
+
+if { $DOMAIN ne "" } {
+    puts "\[INFO\] Configuring domain: $DOMAIN"
+    send -- "store system domain $DOMAIN\r"
+    expect {
+        -timeout 210
+        -re $prompt_pattern {}
+        {Traceback (most recent call last)} {
+            puts "\[WARN\] Domain might not be set to $DOMAIN - continuing."
+            wait_for_prompt
+        }
+        timeout {
+            puts "\[WARN\] Timeout setting domain - continuing."
+            wait_for_prompt
+        }
+    }
+}
+
+if { $TIMEZONE ne "" } {
+    puts "\[INFO\] Configuring timezone: $TIMEZONE"
+    send -- "store system clock timezone $TIMEZONE\r"
+    expect {
+        -timeout 30
+        "(y/n)?" {
+            send "y\r"
+            expect {
+                -timeout 30
+                -re $prompt_pattern {}
+                timeout {
+                    puts "\[WARN\] Timeout after timezone confirmation."
+                    wait_for_prompt
+                }
+            }
+        }
+        -re $prompt_pattern {
+            puts "\[INFO\] Timezone set without confirmation prompt."
+        }
+        timeout {
+            puts "\[WARN\] Timeout setting timezone - continuing."
+            wait_for_prompt
+        }
+    }
+}
+
+puts "\[INFO\] Restarting network..."
+send "restart network\r"
+expect {
+    -timeout 30
+    "(Yes/No)" {
+        send "Yes\r"
+        expect {
+            -timeout 900
+            -re $prompt_pattern {}
+            timeout {
+                puts "\[WARN\] Timeout waiting for network restart (900s)."
+                wait_for_prompt
+            }
+        }
+    }
+    -re $prompt_pattern {
+        puts "\[INFO\] Restarted network without confirmation prompt."
+    }
+    timeout {
+        puts "\[WARN\] Timeout restarting network - continuing."
+        wait_for_prompt
+    }
+}
+
+# PHASE 2: Reconnect
+sleep 5
+spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
+expect {
+    -nocase {System is now operational in CLI regular mode} { exp_continue }
+    -re $prompt_pattern {}
+    timeout {
+        puts "\[NOTE\] Timeout reconnecting - instance likely private and unreachable externally."
+        exit 0
+    }
+}
+
+# PHASE 3: Shared Secret Configuration
+if { $SHARED_SECRET ne "" } {
+    puts "\[INFO\] Setting shared secret for Central Manager registration."
+    send -- "store system shared secret $SHARED_SECRET\r"
+    wait_for_prompt
+}
+
+# PHASE 4: License Installation
+proc install_license {key} {
+    global prompt_pattern
+
+    send "store license\r"
+    expect "Please paste the string received from customer services. Then press <ENTER> to continue."
+    send -- "$key\r"
+
+    # Wait for CLI prompt
+    expect {
+        -re $prompt_pattern {}
+        timeout {
+            puts "\[WARN\] Timeout waiting for prompt after license installation."
+        }
+    }
+}
+
+if { $LICENSE_BASE ne "" } {
+    puts "\[INFO\] Installing Base license."
+    install_license $LICENSE_BASE
+}
+
+# Append license disabled pending investigation
+# if { $LICENSE_APPEND ne "" } {
+#     puts "\[INFO\] Installing Append Trial license."
+#     install_license $LICENSE_APPEND
+# }
+
+# PHASE 5: Central Manager Registration
+if { $CENTRAL_MANAGER ne "" } {
+    set reg_max_attempts 5
+    set reg_attempt 0
+    set reg_success 0
+
+    while { $reg_attempt < $reg_max_attempts && $reg_success == 0 } {
+        incr reg_attempt
+        puts "\[INFO\] Registering with Central Manager at $CENTRAL_MANAGER (attempt $reg_attempt/$reg_max_attempts)."
+        send -- "register management $CENTRAL_MANAGER 8443\r"
+        expect {
+            -timeout 120
+            -nocase "Successfully registered" {
+                set reg_success 1
+            }
+            -nocase "Unit is already managed" {
+                puts "\[INFO\] Unit is already managed by the Central Manager - treating as success."
+                set reg_success 1
+            }
+            -nocase "Could not register" {
+                puts "\[WARN\] Registration attempt $reg_attempt failed: CM rejected the request."
+            }
+            eof {
+                # Session closed - treat as success (some firmware versions close on success)
+                set reg_success 1
+            }
+            -re $prompt_pattern {
+                puts "\[WARN\] Registration attempt $reg_attempt failed: got CLI prompt back (expected success message)."
+            }
+            timeout {
+                puts "\[WARN\] Registration attempt $reg_attempt timed out."
+            }
+        }
+
+        if { $reg_success == 0 && $reg_attempt < $reg_max_attempts } {
+            set delay [expr { 10 * $reg_attempt }]
+            puts "\[INFO\] Waiting ${delay}s before retry..."
+            sleep $delay
+        }
+    }
+
+    if { $reg_success == 0 } {
+        puts "\[ERROR\] Central Manager registration failed after $reg_max_attempts attempts. Aborting."
+        exit 1
+    }
+}
+
+# Reconnect for verification (registration closes the session on success)
+sleep 5
+spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$TARGET
+expect {
+    -nocase {System is now operational in CLI regular mode} { exp_continue }
+    -re $prompt_pattern {}
+    timeout {
+        puts "\[WARN\] Timeout reconnecting after registration - skipping verification."
+        exit 0
+    }
+}
+
+# Verification
+set verify_commands {
+    "show network interface all"
+    "show network routes defaultroute"
+    "show network resolvers all"
+    "show system hostname"
+    "show system clock timezone"
+    "show system domain"
+    "show unit type"
+}
+
+puts "\[INFO\] Running verification..."
+foreach command $verify_commands {
+    send "$command\r"
+    wait_for_prompt
+}
+
+# PHASE 6: Set up data export
+if { $AGG_HOST ne "" } {
+    send "grdapi configure_export aggHost=$AGG_HOST exportOlderThan=1 exportValues=1 ignoreOlderThan=2\r"
+    wait_for_prompt
+    send "grdapi schedule_job jobType=DataExport cronString=\"$DATA_EXPORT_CRON_STRING\"\r"
+    wait_for_prompt
+}
+
+# PHASE 7: Install policy on Central Manager for this unit
+# Users can modify which policy is installed. If so, be sure to consistently change the other appliance types as well.
+if { $CENTRAL_MANAGER ne "" } {
+    puts "\[INFO\] Installing policy on Central Manager for $HOSTNAME ($PRIVATE_IP)..."
+    spawn ssh -o StrictHostKeyChecking=no -i $PEM_FILE cli@$CM_PUBLIC_DNS
+    expect {
+        -nocase {System is now operational in CLI regular mode} { exp_continue }
+        -re $prompt_pattern {}
+        timeout {
+            puts "\[WARN\] Timeout connecting to Central Manager $CENTRAL_MANAGER — skipping policy_install."
+        }
+    }
+    if { [catch {
+        send -- "grdapi policy_install policy=\"Default - Ignore Data Activity for Unknown Connections\" api_target_host=\"$PRIVATE_IP\"\r"
+        wait_for_prompt
+    } err] } {
+        puts "\[WARN\] policy_install failed: $err - continuing."
+    }
+    if { [catch { send "quit\r" } err] } {
+        puts "\[WARN\] Could not send quit to Central Manager: $err - continuing."
+    } else {
+        expect {
+            -timeout 10
+            eof {}
+            timeout { puts "\[WARN\] Timeout on quit from Central Manager." }
+        }
+    }
+}
+
+# PHASE 8: Configure Archive and Purge
+# NOTE: This phase is disabled by default (if { 0 }).
+# To enable it, change "if { 0 }" to "if { 1 }" and edit the configuration command to your requirements.
+if { 0 } {
+    puts "\[INFO\] Configuring archive..."
+    send -- "grdapi configure_archive archiveOlderThan=1 archiveValues=1 destHost=10.10.10.10 ignoreOlderThan=30 protocol=SFTP targetDir=/archive/dir userName=root passwd=1234\r"
+    wait_for_prompt
+    send -- "grdapi configure_purge purgeAtAge=30 purgeWithoutArchive=0\r"
+    wait_for_prompt
+}
+
+# Exit
+send "quit\r"
+expect {
+    -timeout 10
+    eof {}
+    timeout { puts "\[WARN\] Timeout on quit command." }
+}
+
+puts "\n✅ Guardium Configuration Completed Successfully for $HOSTNAME using $CONNECT_MODE connection ($TARGET)\n"

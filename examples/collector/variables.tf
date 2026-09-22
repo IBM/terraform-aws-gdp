@@ -1,0 +1,240 @@
+#
+# Copyright (c) IBM Corp. 2026
+# SPDX-License-Identifier: Apache-2.0
+#
+
+##############################################
+# IBM Guardium GDP - Collector Variables
+##############################################
+
+variable "region" {
+  description = "AWS region for deployment"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "Existing VPC ID shared with Central Manager & Aggregator"
+  type        = string
+}
+
+variable "subnet_id" {
+  description = "Existing Subnet ID (optional). Leave empty to auto-create a new subnet."
+  type        = string
+  default     = null
+}
+
+variable "enable_auto_vpc" {
+  description = "If true, Terraform will automatically create a new VPC, subnet, route table, and IGW when vpc_id/subnet_id are not provided."
+  type        = bool
+  default     = false
+}
+
+
+variable "key_name" {
+  description = "AWS key pair for SSH access"
+  type        = string
+}
+
+variable "pem_file_path" {
+  description = "Path to PEM file for SSH automation"
+  type        = string
+}
+
+variable "ami_type" {
+  description = "AMI type: 'legacy' for unit-type-specific AMIs, 'unified' for multi-unit-type AMI. When using unified AMI, the system automatically configures the correct unit type."
+  type        = string
+  default     = "legacy"
+}
+
+variable "collector_ami_id" {
+  description = "AMI ID for Guardium Collector"
+  type        = string
+}
+
+variable "collector_instance_type" {
+  description = "Instance type for Guardium Collector (e.g., m6i.xlarge)"
+  type        = string
+}
+
+variable "collector_count" {
+  description = "Number of Guardium Collector instances to deploy"
+  type        = number
+}
+
+variable "assign_public_ip" {
+  description = "Assign public IP for Guardium Collector"
+  type        = bool
+  default     = true
+}
+
+variable "resolver1" {
+  description = "Primary DNS resolver"
+  type        = string
+}
+
+variable "resolver2" {
+  description = "Secondary DNS resolver"
+  type        = string
+}
+
+variable "domain" {
+  description = "Domain for Guardium Collector instance"
+  type        = string
+}
+
+variable "timezone" {
+  description = "Timezone for Guardium system"
+  type        = string
+}
+
+# =====================================================
+# Shared Secret (for Central Manager registration)
+# =====================================================
+
+variable "shared_secret" {
+  description = "Shared secret used to register this Collector with the Central Manager. Must match the Central Manager's shared secret."
+  type        = string
+  default     = ""
+}
+
+variable "central_manager_ip" {
+  description = "Private IP address of the Central Manager to register with."
+  type        = string
+  default     = ""
+}
+
+variable "central_manager_public_dns" {
+  description = "Public DNS (or IP) of the Central Manager, used to SSH to it from the Terraform machine."
+  type        = string
+  default     = ""
+}
+
+# =====================================================
+# Cloud-Init User Data (optional)
+# =====================================================
+
+variable "user_data_file" {
+  description = "Path to Cloud-Init user-data file (e.g. #cloud-config YAML). Relative to examples/collector. Leave empty to omit."
+  type        = string
+  default     = ""
+}
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile name or ARN to attach to the collector instance for AWS service access"
+  type        = string
+  default     = null
+}
+
+# =====================================================
+# GDP License Keys (optional)
+# =====================================================
+
+variable "license_base" {
+  description = "GDP Base license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
+variable "license_append" {
+  description = "GDP Append Trial license key for automated installation. Leave empty to skip."
+  type        = string
+  default     = ""
+}
+
+variable "allowed_cidrs" {
+  description = "Base allowed CIDR ranges (same as terraform.tfvars)"
+  type        = list(string)
+  default = [
+    "10.0.0.0/16",
+    "170.225.223.17/32"
+  ]
+}
+
+variable "custom_allowed_cidrs" {
+  description = "Optional additional CIDRs to merge with allowed_cidrs"
+  type        = list(string)
+  default     = []
+}
+
+variable "tags" {
+  description = "Common resource tags"
+  type        = map(string)
+  default     = {}
+}
+
+# =====================================================
+# Optional Existing Security Group IDs
+# =====================================================
+
+variable "existing_guardium_cm_sg_id" {
+  description = "Existing Guardium Central Manager Security Group ID (optional, used for cross-linking)."
+  type        = string
+  default     = ""
+}
+
+variable "existing_guardium_aggregator_sg_id" {
+  description = "Existing Guardium Aggregator Security Group ID (optional, overrides auto-detection)."
+  type        = string
+  default     = ""
+}
+
+variable "existing_guardium_collector_sg_id" {
+  description = "Existing Guardium Collector Security Group ID (optional, reserved for future use)."
+  type        = string
+  default     = ""
+}
+
+# =====================================================
+# Data Export / Aggregator Assignment
+# =====================================================
+
+variable "data_export_cron_string" {
+  description = "Cron expression (Quartz format) for the DataExport scheduled job. Do not include surrounding quotes."
+  type        = string
+  default     = "0 0 2 * * ? *"
+}
+
+variable "number_collectors_per_aggregator" {
+  description = "Number of collectors to assign to each aggregator."
+  type        = number
+  default     = 0
+}
+
+variable "aggregator_name_prefix" {
+  description = "Name prefix used for aggregator instances."
+  type        = string
+  default     = "guard-agg"
+}
+
+# =====================================================
+# Instance Naming Configuration
+# =====================================================
+
+variable "instance_name_prefix" {
+  description = "Prefix for instance name tag (e.g., 'guard-col'). The instance number will be appended."
+  type        = string
+  default     = "guard-col"
+}
+
+# =====================================================
+# Root Volume Configuration
+# =====================================================
+
+variable "root_volume_size" {
+  description = "Size of the root EBS volume in GB"
+  type        = number
+  default     = 550
+}
+
+variable "root_volume_type" {
+  description = "Type of the root EBS volume (e.g., gp3, gp2, io1, io2)"
+  type        = string
+  default     = "gp3"
+}
+
+variable "root_volume_delete_on_termination" {
+  description = "Whether to delete the root volume when the instance is terminated."
+  type        = bool
+  default     = true
+}
+
