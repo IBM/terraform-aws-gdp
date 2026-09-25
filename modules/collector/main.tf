@@ -45,6 +45,12 @@ locals {
   subnet_mask   = cidrnetmask(local.subnet_cidr)
   gateway_ip    = cidrhost(local.subnet_cidr, 1)
 
+  # GRD-134632: Merge deprecated license_append string + new license_appends list into one effective list
+  effective_license_appends = compact(concat(
+    var.license_appends,
+    var.license_append != "" ? [var.license_append] : []
+  ))
+
   # User data processing for unified AMI
   user_data_clean = var.user_data != null && var.user_data != "" ? replace(var.user_data, "/^#cloud-config\\s*/", "") : "{}"
   user_config     = try(yamldecode(local.user_data_clean), {})
@@ -105,12 +111,18 @@ resource "null_resource" "configure_guardium" {
   for_each = {
     for idx, instance in aws_instance.collector :
     instance.tags["Name"] => {
-      hostname   = instance.tags["Name"]
-      private_ip = instance.private_ip
-
-      # Use private IP if no public DNS/IP
-      public_dns = coalesce(instance.public_dns, instance.public_ip, instance.private_ip)
+      hostname    = instance.tags["Name"]
+      private_ip  = instance.private_ip
+      public_dns  = coalesce(instance.public_dns, instance.public_ip, instance.private_ip)
+      instance_id = instance.id
+      # GRD-137193: GID derived from SHA-256 of instance ID (60-bit space, globally unique, stable across re-applies)
+      gid         = parseint(substr(sha256(instance.id), 0, 15), 16)
     }
+  }
+
+  triggers = {
+    instance_id = each.value.instance_id
+    gid         = tostring(each.value.gid)
   }
 
   provisioner "local-exec" {
@@ -132,7 +144,8 @@ echo "[INFO] Connection target: ${each.value.public_dns}"
   "${var.shared_secret}" \
   "${var.central_manager_ip}" \
   "${var.license_base}" \
-  "${var.license_append}"
+  "${join("|", local.effective_license_appends)}" \
+  "${each.value.gid}"
 echo "[INFO] Collector configuration complete for ${each.value.hostname}"
 echo "============================================================"
 EOT

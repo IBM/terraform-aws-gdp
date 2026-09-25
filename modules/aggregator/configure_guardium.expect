@@ -24,26 +24,27 @@ proc wait_for_prompt {} {
 }
 
 # Argument validation
-if {$argc != 14} {
-    puts "\[ERROR\] Expected 14 arguments, got $argc\nArgs: $argv"
+if {$argc != 15} {
+    puts "\[ERROR\] Expected 15 arguments, got $argc\nArgs: $argv"
     exit 2
 }
 
 # Arguments from Terraform
-set HOSTNAME          [lindex $argv 0]
-set PRIVATE_IP        [lindex $argv 1]
-set PUBLIC_DNS        [lindex $argv 2]
-set PEM_FILE          [lindex $argv 3]
-set SUBNET_PREFIX     [lindex $argv 4]
-set GATEWAY           [lindex $argv 5]
-set RESOLVER1         [lindex $argv 6]
-set DOMAIN            [lindex $argv 7]
-set RESOLVER2         [lindex $argv 8]
-set TIMEZONE          [lindex $argv 9]
-set SHARED_SECRET     [lindex $argv 10]
-set CENTRAL_MANAGER   [lindex $argv 11]
-set LICENSE_BASE      [lindex $argv 12]
-set LICENSE_APPEND    [lindex $argv 13]
+set HOSTNAME            [lindex $argv 0]
+set PRIVATE_IP          [lindex $argv 1]
+set PUBLIC_DNS          [lindex $argv 2]
+set PEM_FILE            [lindex $argv 3]
+set SUBNET_PREFIX       [lindex $argv 4]
+set GATEWAY             [lindex $argv 5]
+set RESOLVER1           [lindex $argv 6]
+set DOMAIN              [lindex $argv 7]
+set RESOLVER2           [lindex $argv 8]
+set TIMEZONE            [lindex $argv 9]
+set SHARED_SECRET       [lindex $argv 10]
+set CENTRAL_MANAGER     [lindex $argv 11]
+set LICENSE_BASE        [lindex $argv 12]
+set LICENSE_APPENDS_RAW [lindex $argv 13]
+set GID                 [lindex $argv 14]
 
 # Determine connection target (prefer public IP)
 if { $PUBLIC_DNS eq "" || $PUBLIC_DNS eq "null" } {
@@ -136,7 +137,7 @@ if { $HOSTNAME ne "" } {
     expect {
         -timeout 30
         "(y/n)?" {
-            send "n\r"
+            send "y\r"
             expect {
                 -timeout 210
                 -re $prompt_pattern {}
@@ -156,6 +157,13 @@ if { $HOSTNAME ne "" } {
         }
     }
 }
+
+# Assign a unique product GID to this appliance — without this, all appliances
+# deployed from the same base image share the same GID, causing identity
+# collisions during aggregation and registration.
+puts "\[INFO\] Setting product GID: $GID"
+send -- "store product gid $GID\r"
+wait_for_prompt
 
 if { $DOMAIN ne "" } {
     puts "\[INFO\] Configuring domain: $DOMAIN"
@@ -265,11 +273,14 @@ if { $LICENSE_BASE ne "" } {
     install_license $LICENSE_BASE
 }
 
-# Append license disabled pending investigation
-# if { $LICENSE_APPEND ne "" } {
-#     puts "\[INFO\] Installing Append Trial license."
-#     install_license $LICENSE_APPEND
-# }
+# GRD-134632: Install all append licenses from pipe-delimited list
+foreach append_key [split $LICENSE_APPENDS_RAW "|"] {
+    set append_key [string trim $append_key]
+    if { $append_key ne "" } {
+        puts "\[INFO\] Installing append license."
+        install_license $append_key
+    }
+}
 
 # PHASE 5: Central Manager Registration
 if { $CENTRAL_MANAGER ne "" } {
@@ -348,6 +359,7 @@ set verify_commands {
     "show system hostname"
     "show system clock timezone"
     "show system domain"
+    "show product gid"
     "show unit type"
 }
 
