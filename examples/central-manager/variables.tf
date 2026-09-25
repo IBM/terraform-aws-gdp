@@ -118,6 +118,12 @@ variable "license_append" {
   default     = ""
 }
 
+variable "license_appends" {
+  description = "List of GDP append license keys for automated installation. Applied sequentially. Leave empty to skip."
+  type        = list(string)
+  default     = []
+}
+
 # =====================================================
 # DNS, Domain & Timezone
 # =====================================================

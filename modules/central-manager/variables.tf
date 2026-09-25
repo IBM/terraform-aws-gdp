@@ -96,9 +96,20 @@ variable "license_base" {
 }
 
 variable "license_append" {
-  description = "GDP Append Trial license key for automated installation. Leave empty to skip."
+  description = "Deprecated. Use license_appends instead. Single GDP append license key. Leave empty to skip."
   type        = string
   default     = ""
+}
+
+variable "license_appends" {
+  description = "List of GDP append license keys for automated installation. Applied sequentially after the base license. Leave empty to skip."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for k in var.license_appends : !strcontains(k, "|")])
+    error_message = "License keys must not contain the '|' character."
+  }
 }
 
 variable "tags" {
