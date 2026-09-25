@@ -58,21 +58,19 @@ user_data_file = "./user-data.yaml"
 
 Your custom cloud-init configuration will be safely merged with the system configuration. The `aggregator: true` field is protected and cannot be overridden. See `user-data.yaml` for an example and the main [README](../../README.md#unified-ami-support) for more details.
 
-### 1.2 Prepare the connection to Central Manager
+### 1.2 Connect to a Central Manager
 
-In AWS, locate the IP address of the Central Manager you want this Aggregator to be registered to.
+In AWS, locate the IP address of the Central Manager you want this Aggregator to register with.
 
-Locate this file and edit it:
+Set `central_manager_ip` in your `terraform.tfvars` to that IP:
 
+```hcl
+central_manager_ip = "10.0.0.10"   # replace with the IP address of the Central Manager
 ```
-vi modules/aggregator/configure_guardium.expect
-```
 
-Scroll down towards the bottom of the file and locate this line.
+The Terraform module handles registration automatically — no manual edits to the expect script are needed.
 
-`send "register management ip-address 8443\r"`
-
-Replace ip-address with the IP address of the central manager. Then save the file.
+> **Standalone mode:** Leave `central_manager_ip` empty (or omit it) to deploy the Aggregator without registering it with a CM. In standalone mode the Aggregator accepts license keys directly.
 
 ## 2. Run the Terraform process
 

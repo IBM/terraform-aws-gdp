@@ -106,8 +106,16 @@ central_manager_ip = "10.0.0.10"
 # AWS Trial Base license. Leave empty to skip automated license installation.
 license_base = ""
 
-# Append Trial License. Leave empty to skip automated license installation.
+# Single append license (deprecated — use license_appends instead).
+# Kept for backwards compatibility. Leave empty to skip.
 license_append = ""
+
+# Multiple append licenses. Each key is installed sequentially after the base
+# license. Leave the list empty to skip append license installation.
+# license_appends = [
+#   "APPEND-LICENSE-ONE",
+#   "APPEND-LICENSE-TWO",
+# ]
 
 # =====================================================
 # GDP Configuration

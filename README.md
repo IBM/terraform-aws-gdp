@@ -131,12 +131,20 @@ module "central_manager" {
   timezone  = "America/New_York"
   resolver1 = "8.8.4.4"
   resolver2 = "1.1.1.1"
-  tags      = {
-                Environment = "dev"
-                Project     = "GuardiumGDP"
-                Owner       = "customer@example.com"
-                Role        = "CentralManager"
-              }
+
+  # License keys
+  license_base    = ""
+  license_appends = [
+    "APPEND-LICENSE-ONE",
+    "APPEND-LICENSE-TWO",
+  ]
+
+  tags = {
+    Environment = "dev"
+    Project     = "GuardiumGDP"
+    Owner       = "customer@example.com"
+    Role        = "CentralManager"
+  }
 }
 ```
 
@@ -163,18 +171,22 @@ module "aggregator" {
   assign_public_ip         = false
 
   # Guardium Configuration
-  domain    = "corp.mycompany.local"
-  timezone  = "America/New_York"
-  resolver1 = "8.8.4.4"
-  resolver2 = "1.1.1.1"
-  tags      = {
-                Environment = "dev"
-                Project     = "GuardiumGDP"
-                Owner       = "customer@example.com"
-                Role        = "Aggregator"
-              }
+  domain             = "corp.mycompany.local"
+  timezone           = "America/New_York"
+  resolver1          = "8.8.4.4"
+  resolver2          = "1.1.1.1"
+  central_manager_ip = "10.0.0.10"
+
+  tags = {
+    Environment = "dev"
+    Project     = "GuardiumGDP"
+    Owner       = "customer@example.com"
+    Role        = "Aggregator"
+  }
 }
 ```
+
+> **Note:** Aggregators and Collectors registered with a Central Manager inherit licensing from the CM. To install licenses directly on an Aggregator or Collector, omit `central_manager_ip` (standalone mode).
 
 
 ### Collector
@@ -199,16 +211,18 @@ module "collector" {
   assign_public_ip        = false
 
   # Guardium Configuration
-  domain    = "corp.mycompany.local"
-  timezone  = "America/New_York"
-  resolver1 = "8.8.4.4"
-  resolver2 = "1.1.1.1"
-  tags      = {
-                Environment = "dev"
-                Project     = "GuardiumGDP"
-                Owner       = "customer@example.com"
-                Role        = "Collector"
-              }
+  domain             = "corp.mycompany.local"
+  timezone           = "America/New_York"
+  resolver1          = "8.8.4.4"
+  resolver2          = "1.1.1.1"
+  central_manager_ip = "10.0.0.10"
+
+  tags = {
+    Environment = "dev"
+    Project     = "GuardiumGDP"
+    Owner       = "customer@example.com"
+    Role        = "Collector"
+  }
 }
 ```
 
@@ -301,7 +315,8 @@ This feature eliminates the guesswork from deployments and provides clear feedba
 
 - **Expect-based CLI automation** for initial Guardium setup
 - **Automatic Central Manager registration** for Aggregators and Collectors
-- **License installation support** for automated deployments
+- **License installation support** — base license plus one or more append licenses via `license_appends`
+- **Unique product GID** assigned automatically per appliance using a SHA-256 formula; stable across re-applies
 - **Cloud-Init integration** with safe merging for custom configurations
 
 ### How It Works

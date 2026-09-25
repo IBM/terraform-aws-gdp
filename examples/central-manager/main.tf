@@ -182,6 +182,7 @@ module "guardium_central_manager" {
   shared_secret    = var.shared_secret
   license_base     = var.license_base
   license_append   = var.license_append
+  license_appends  = var.license_appends
   user_data        = local.user_data
   tags             = var.tags
   assign_public_ip = var.assign_public_ip
