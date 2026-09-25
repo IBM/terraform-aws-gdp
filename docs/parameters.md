@@ -30,16 +30,30 @@ All parameters should be edited in the file terraform.tfvars under these directo
 
 > **_These parameters are less critical. You can generally accept the defaults if you do not have a specific need to change them._**
 
-| Name | Comment | 
-| --- | --- | 
-| domain | Local domain, e.g. mydept.myco.local | 
-| central_manager_ip | IP address of the Central Manager to register with | 
-| shared_secret | Shared Secret (for Central Manager registration) | 
-| timezone | Timezone of the appliance, e.g. Asia/Singapore | 
-| resolver1 | DNS server for the appliance, default value of 8.8.4.4 provided | 
-| resolver2 | DNS server for the appliance, default value of 1.1.1.1 provided | 
-| tags -> Environmant | Name for the appliance environment, default value of dev provided | 
-| tags -> Project | Project name for the appliance, e.g. MyDeptGDP | 
-| tags -> Owner | Email address of the GDP owner | 
-| tags -> Role | Role of the appliance, e.g. MyRole | 
+| Name | Comment |
+| --- | --- |
+| domain | Local domain, e.g. mydept.myco.local |
+| central_manager_ip | IP address of the Central Manager to register with (Aggregator and Collector only) |
+| shared_secret | Shared secret for Central Manager registration (must match the value set on the CM) |
+| timezone | Timezone of the appliance, e.g. Asia/Singapore |
+| resolver1 | DNS server for the appliance, default value of 8.8.4.4 provided |
+| resolver2 | DNS server for the appliance, default value of 1.1.1.1 provided |
+| tags -> Environment | Name for the appliance environment, default value of dev provided |
+| tags -> Project | Project name for the appliance, e.g. MyDeptGDP |
+| tags -> Owner | Email address of the GDP owner |
+| tags -> Role | Role of the appliance, e.g. MyRole |
+
+### License parameters (optional)
+
+| Name | Comment |
+| --- | --- |
+| license_base | Base GDP license key. Applied automatically during deployment. Leave empty to skip. |
+| license_append | **Deprecated.** Single append license key. Use `license_appends` instead. Kept for backwards compatibility. |
+| license_appends | List of append license keys applied sequentially after the base license. Preferred over `license_append`. Example: `["KEY-ONE", "KEY-TWO"]` |
+
+> **Note:** Aggregators and Collectors that are registered with a Central Manager inherit licensing from the CM and will ignore `license_base` / `license_appends`. Set these keys only on the Central Manager, or deploy the unit in standalone mode (omit `central_manager_ip`).
+
+### Product GID
+
+Each appliance receives a unique **product GID** assigned automatically during deployment. The GID is derived from the AWS instance ID using a SHA-256 formula and is stable across re-applies. No manual steps are required.
 

@@ -50,7 +50,7 @@ After this, the appliance will now be a central manager.
 
 ## 2 Connect a managed unit to a central manager
 
-_Do this **before** running the Terraform script for the aggregator or collector.
+_Do this **before** running the Terraform script for the aggregator or collector._
 
 ### 2.1 Get the IP address of the central manager
 
@@ -58,30 +58,19 @@ Connect to the AWS dashboard and locate the central manager you created earlier.
 
 Click on its instance ID to see information about the machine.
 
-Note its public IP address. If it does not have a public IP address, note its private IP address.
+Note its IP address (public if the CM has one, otherwise private).
 
-### 2.2 Edit the Expect file
+### 2.2 Set the Central Manager IP in terraform.tfvars
 
-Back in the Terraform repository files, locate this file and edit it.
+In the `terraform.tfvars` file for your aggregator or collector example, set:
 
+```hcl
+central_manager_ip = "10.0.0.10"   # replace with the IP address of the Central Manager
+shared_secret      = "guard"        # must match the secret set on the Central Manager
 ```
-vi modules/aggregator/configure_guardium.expect
-```
 
-(Use the correct directory for the type of managed unit you are creating -- aggregator or collector.)
-
-Scroll down towards the bottom of the file and locate this line.
-
-`send "register management ip-address 8443\r"`
-
-Replace ip-address with the IP address of the central manager. Then save the file.
-
-Now locate this line:
-
-`send "store system shared secret guard\r"`
-
-Replace "guard" with the same secret key you used when creating the central manager.
+No manual edits to the expect scripts are needed — the module reads these variables and handles registration automatically.
 
 ### 2.3 Run the Terraform process
 
-You can now run the aggregator Terraform process.
+You can now run the aggregator or collector Terraform process.
