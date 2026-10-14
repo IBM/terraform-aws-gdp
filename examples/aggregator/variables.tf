@@ -238,3 +238,13 @@ variable "root_volume_delete_on_termination" {
   default     = true
 }
 
+
+# =====================================================
+# Data Import
+# =====================================================
+
+variable "data_import_cron_string" {
+  description = "Cron expression (Quartz format) for the DataImport scheduled job. Do not include surrounding quotes."
+  type        = string
+  default     = "0 0 4 * * ? *"
+}

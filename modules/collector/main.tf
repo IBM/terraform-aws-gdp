@@ -148,7 +148,8 @@ echo "[INFO] Aggregator host for ${each.value.hostname}: $AGG_HOST"
   "${var.license_base}" \
   "${var.license_append}" \
   "$AGG_HOST" \
-  "${var.central_manager_public_dns}"
+  "${var.central_manager_public_dns}" \
+  "${var.data_export_cron_string}"
 echo "[INFO] Collector configuration complete for ${each.value.hostname}"
 echo "============================================================"
 EOT

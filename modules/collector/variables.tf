@@ -225,3 +225,12 @@ variable "root_volume_delete_on_termination" {
   type        = bool
   default     = true
 }
+
+###########################################
+# Data Export Configuration
+###########################################
+
+variable "data_export_cron_string" {
+  description = "Cron expression for the DataExport scheduled job (Quartz format, without surrounding quotes)."
+  type        = string
+}
