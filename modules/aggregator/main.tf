@@ -133,7 +133,8 @@ echo "[INFO] Connection target: ${each.value.public_dns}"
   "${var.shared_secret}" \
   "${var.central_manager_ip}" \
   "${var.license_base}" \
-  "${var.license_append}"
+  "${var.license_append}" \
+  "${var.instance_name_prefix}"
 echo "[INFO] Aggregator configuration complete for ${each.value.hostname}"
 echo "============================================================"
 EOT
