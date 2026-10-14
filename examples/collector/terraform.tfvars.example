@@ -132,6 +132,16 @@ tags = {
 }
 
 # =====================================================
+# Data Export / Aggregator Assignment
+# =====================================================
+
+# Number of collectors to assign to each aggregator.
+number_collectors_per_aggregator = 2
+
+# Name prefix of the aggregator instances. Must match the instance_name_prefix in the aggregator values.
+aggregator_name_prefix = "guard-agg"
+
+# =====================================================
 # Instance Naming and Storage (optional)
 # =====================================================
 
