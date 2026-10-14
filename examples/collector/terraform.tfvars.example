@@ -99,6 +99,9 @@ shared_secret = "guard"
 # IP address of the Central Manager to register with
 central_manager_ip = "10.0.0.10"
 
+# Public IP address of the Central Manager for other commands
+central_manager_public_dns = "192.168.255.255"
+
 # =====================================================
 # GDP License Keys (optional)
 # =====================================================

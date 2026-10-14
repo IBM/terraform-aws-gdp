@@ -134,7 +134,8 @@ echo "[INFO] Connection target: ${each.value.public_dns}"
   "${var.central_manager_ip}" \
   "${var.license_base}" \
   "${var.license_append}" \
-  "${var.instance_name_prefix}"
+  "${var.instance_name_prefix}" \
+  "${var.central_manager_public_dns}"
 echo "[INFO] Aggregator configuration complete for ${each.value.hostname}"
 echo "============================================================"
 EOT
