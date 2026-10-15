@@ -325,12 +325,21 @@ if { $CENTRAL_MANAGER ne "" } {
                     exit 1
                 }
             }
+            # Update agg_spawn_id to the new session opened for this retry
+            set agg_spawn_id $spawn_id
         }
     }
 
     if { $reg_success == 0 } {
         puts "\[ERROR\] Central Manager registration failed after $reg_max_attempts attempts. Aborting."
         exit 1
+    }
+
+    # If registration succeeded on a retry (attempt > 1), give the CM extra time
+    # to finish processing the new unit before schedule_job and policy_install run.
+    if { $reg_attempt > 1 } {
+        puts "\[INFO\] Registration succeeded on retry — waiting 60s for CM to finish processing..."
+        sleep 60
     }
 
     # Reconnect for verification (registration closes the session on success)
@@ -344,6 +353,8 @@ if { $CENTRAL_MANAGER ne "" } {
             exit 0
         }
     }
+    # Keep agg_spawn_id current after post-registration reconnect
+    set agg_spawn_id $spawn_id
 }
 
 # Verification

@@ -319,6 +319,13 @@ if { $CENTRAL_MANAGER ne "" } {
         puts "\[ERROR\] Central Manager registration failed after $reg_max_attempts attempts. Aborting."
         exit 1
     }
+
+    # If registration succeeded on a retry (attempt > 1), give the CM extra time
+    # to finish processing the new unit before configure_export and schedule_job run.
+    if { $reg_attempt > 1 } {
+        puts "\[INFO\] Registration succeeded on retry — waiting 60s for CM to finish processing..."
+        sleep 60
+    }
 }
 
 # Reconnect for verification (registration closes the session on success)
@@ -399,11 +406,14 @@ if { 0 } {
 }
 
 # Exit
-send "quit\r"
-expect {
-    -timeout 10
-    eof {}
-    timeout { puts "\[WARN\] Timeout on quit command." }
+if { [catch { send "quit\r" } err] } {
+    puts "\[WARN\] Could not send quit: $err - session already closed."
+} else {
+    expect {
+        -timeout 10
+        eof {}
+        timeout { puts "\[WARN\] Timeout on quit command." }
+    }
 }
 
 puts "\n✅ Guardium Configuration Completed Successfully for $HOSTNAME using $CONNECT_MODE connection ($TARGET)\n"
