@@ -98,7 +98,13 @@ variable "shared_secret" {
 }
 
 variable "central_manager_ip" {
-  description = "IP address of the Central Manager to register with."
+  description = "Private IP address of the Central Manager to register with."
+  type        = string
+  default     = ""
+}
+
+variable "central_manager_public_dns" {
+  description = "Public DNS (or IP) of the Central Manager, used to SSH to it from the Terraform machine."
   type        = string
   default     = ""
 }
@@ -176,6 +182,28 @@ variable "existing_guardium_collector_sg_id" {
   description = "Existing Guardium Collector Security Group ID (optional, reserved for future use)."
   type        = string
   default     = ""
+}
+
+# =====================================================
+# Data Export / Aggregator Assignment
+# =====================================================
+
+variable "data_export_cron_string" {
+  description = "Cron expression (Quartz format) for the DataExport scheduled job. Do not include surrounding quotes."
+  type        = string
+  default     = "0 0 2 * * ? *"
+}
+
+variable "number_collectors_per_aggregator" {
+  description = "Number of collectors to assign to each aggregator."
+  type        = number
+  default     = 0
+}
+
+variable "aggregator_name_prefix" {
+  description = "Name prefix used for aggregator instances."
+  type        = string
+  default     = "guard-agg"
 }
 
 # =====================================================
